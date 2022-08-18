@@ -1,0 +1,12 @@
+services:
+  redezero:
+    build:
+      context: .
+      args:
+        - PROJECT_ROOT=/workspace
+    tty: true
+    volumes:
+      # Forwards the local Docker socket to the container.
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      - .:/workspace:cached
+    working_dir: /workspace
