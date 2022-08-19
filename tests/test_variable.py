@@ -49,3 +49,34 @@ class TestVariable:
     def test_正常系len動作(self):
         x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
         assert len(x) == 2
+
+    def params_for_print():
+        """正常系_print動作のパラメータ
+        """
+        return {
+            '引数がNone': (
+                None,
+                'variable(None)\n'
+            ),
+            '引数が1次元': (
+                np.array([1, 2, 3]),
+                'variable([1 2 3])\n'
+            ),
+            '引数が2次元': (
+                np.array([[1, 2, 3], [4, 5, 6]]),
+                f"variable([[1 2 3]\n {' ' * 9}[4 5 6]])\n"
+            )
+        }
+
+    @pytest.mark.parametrize(
+        'x, msg',
+        params_for_print().values(),
+        ids=params_for_print().keys()
+    )
+    def test_正常系_print動作(self, capfd, x, msg):
+        """正常系_print動作
+        """
+        y = Variable(x)
+        print(y)
+        out, _ = capfd.readouterr()
+        assert out == msg
