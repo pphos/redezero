@@ -5,6 +5,7 @@ import numpy as np
 
 from redezero import configuration
 from redezero import function
+import redezero
 from redezero.functions.math import basic_math
 
 
@@ -282,6 +283,30 @@ class Variable:
                 for y in f.outputs:
                     casted_y = cast(Variable, y())
                     casted_y.grad = None
+
+    def reshape(self, *shape: int) -> Variable:
+        """配列の形状を変更する
+
+        Parameters
+        ----------
+        *shape : int
+            変換したい配列の形状
+
+        Returns
+        ----------
+        ~redezero.Variable
+            形状を変更したVariableインスタンス
+
+        Examples
+        -----------
+        >>> x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        >>> y = x.reshape((6,))
+        >>> y
+        variable([1 2 3 4 5 6])
+        """
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+            shape = shape[0]
+        return redezero.functions.reshape(self, shape)
 
 
 def as_variable(obj) -> Variable:

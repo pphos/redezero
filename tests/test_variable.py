@@ -74,9 +74,32 @@ class TestVariable:
         ids=params_for_print().keys()
     )
     def test_正常系_print動作(self, capfd, x, msg):
-        """正常系_print動作
-        """
         y = Variable(x)
         print(y)
         out, _ = capfd.readouterr()
         assert out == msg
+
+    def params_for_reshape():
+        """正常系_reshape動作のパラメータ
+        """
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        expect = (3, 2)
+
+        return {
+            '引数がタプル': (x, (3, 2), expect),
+            '引数がリスト': (x, [3, 2], expect),
+        }
+
+    @pytest.mark.parametrize(
+        'x, shape, expect',
+        params_for_reshape().values(),
+        ids=params_for_reshape().keys()
+    )
+    def test_正常系_reshape動作(self, x, shape, expect):
+        # 順伝播の確認
+        y = x.reshape(shape)
+        assert y.shape == expect
+
+        # 逆伝播の確認
+        y.backward()
+        assert x.grad.shape == x.shape
