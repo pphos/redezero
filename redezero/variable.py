@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Optional, cast
+import heapq
 import numpy as np
 
-from redezero import types
 from redezero import configuration
 from redezero import function
 from redezero.functions.math import basic_math
@@ -230,10 +230,10 @@ class Variable:
             # y.gradの微分値を設定
             self.grad = Variable(np.ones_like(self.data))
 
-        funcs: list[function.Function] = []
+        funcs: list = []
         # funcsリストに同じ関数を重複して追加することを防ぐために使用
         # (関数のbackwardメソッドが誤って複数回呼ばれることを防ぐ)
-        seen_set = set()
+        seen_set: set[function.Function] = set()
 
         def add_func(f: function.Function) -> None:
             """逆伝播対象の関数追加
@@ -246,16 +246,17 @@ class Variable:
                 逆伝播対象のFunction
             """
             if f not in seen_set:
-                # 世代順に関数をソート
-                funcs.append(f)
+                # heapqは最小値を取り出す仕組みのため, generationを負数に変換
+                # Chainer _backprop.pyの下記処理を参考
+                # https://github.com/chainer/chainer/blob/536cda7c9a146b9198f83837ba439a5afbdc074d/chainer/_backprop.py#L161
+                heapq.heappush(funcs, (-f.generation, len(seen_set), f))
                 seen_set.add(f)
-                funcs.sort(key=lambda x: x.generation)
         add_func(cast(function.Function, self.creator))
 
         # 逆伝播のメイン処理
         # 出力から順にたどる関数がなくなるまで計算
         while funcs:
-            f = funcs.pop()
+            f: function.Function = heapq.heappop(funcs)[2]
             gys: list[Optional[Variable]] = []
             for output in f.outputs:
                 casted_output = cast(Variable, output())
