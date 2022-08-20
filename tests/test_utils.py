@@ -152,3 +152,47 @@ def test_正常系_計算グラフをGraphvizで画像に変換(dot_graph):
 
     # 出力画像の比較
     assert filecmp.cmp(dot_graph['actual'], dot_graph['expect'])
+
+
+# =============================================================================
+# Utility functions for numpy (numpy magic)
+# =============================================================================
+def params_for_sum_to():
+    """sum_to動作のパラメータ
+    """
+    x = np.ones(3 * 4 * 5, dtype='int64').reshape(3, 4, 5)
+
+    return {
+        '全ての要素の足し合わせ': (
+            x,
+            (),
+            np.array(60)
+        ),
+        '0軸方向に足し合わせ': (
+            x,
+            (1, 4, 5),
+            np.array([
+                [[3, 3, 3, 3, 3],
+                 [3, 3, 3, 3, 3],
+                 [3, 3, 3, 3, 3],
+                 [3, 3, 3, 3, 3]
+                 ]]
+            )
+        ),
+        '0軸と1軸方向に足し合わせ': (
+            x,
+            (1, 1, 5),
+            np.array([[[12, 12, 12, 12, 12]]])
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    'x, shape, expect',
+    params_for_sum_to().values(),
+    ids=params_for_sum_to().keys()
+)
+def test_sum_to動作(x, shape, expect):
+    x = np.ones(3 * 4 * 5, dtype='int64').reshape(3, 4, 5)
+    y = utils.sum_to(x, shape)
+    assert np.array_equal(y, expect)
