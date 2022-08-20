@@ -18,6 +18,15 @@ def params_for_add():
                 'y_data': np.array(5.0)
             }
         ),
+        'ブロードキャストあり': (
+            Variable(np.array([1, 2, 3])),
+            Variable(np.array([10])),
+            {
+                'x0_grad': np.array([1, 1, 1]),
+                'x1_grad': np.array([3]),
+                'y_data': np.array([11, 12, 13])
+            }
+        )
     }
 
 
@@ -82,6 +91,15 @@ def params_for_mul():
                 'x0_grad': np.array(3.0),
                 'x1_grad': np.array(2.0),
                 'y_data': np.array(6.0)
+            }
+        ),
+        'ブロードキャストあり': (
+            Variable(np.array([1, 2, 3])),
+            Variable(np.array([10])),
+            {
+                'x0_grad': np.array([10, 10, 10]),
+                'x1_grad': np.array([6]),
+                'y_data': np.array([10, 20, 30])
             }
         )
     }
@@ -164,6 +182,15 @@ def params_for_sub():
                 'x1_grad': np.array(-1.0),
                 'y_data': np.array(1.0)
             }
+        ),
+        'ブロードキャストあり': (
+            Variable(np.array([1, 2, 3])),
+            Variable(np.array([10])),
+            {
+                'x0_grad': np.array([1, 1, 1]),
+                'x1_grad': np.array([-3]),
+                'y_data': np.array([-9, -8, -7])
+            }
         )
     }
 
@@ -176,12 +203,12 @@ def params_for_sub():
 def test_正常系_減算_項が全てVariable(x0, x1, expects):
     # 順伝播の確認
     y = x0 - x1
-    assert y.data == expects['y_data']
+    assert np.array_equal(y.data, expects['y_data'])
 
     # 逆伝播の確認
     y.backward()
-    assert x0.grad.data == expects['x0_grad']
-    assert x1.grad.data == expects['x1_grad']
+    assert np.array_equal(x0.grad.data, expects['x0_grad'])
+    assert np.array_equal(x1.grad.data, expects['x1_grad'])
 
 
 def params_for_sub_left_term_is_not_variable():
@@ -231,6 +258,15 @@ def params_for_div():
                 'x1_grad': np.array(-1.0),
                 'y_data': np.array(2.0)
             }
+        ),
+        'ブロードキャストあり': (
+            Variable(np.array([4.0, 4.0, 4.0])),
+            Variable(np.array([2.0])),
+            {
+                'x0_grad': np.array([0.5, 0.5, 0.5]),
+                'x1_grad': np.array([-3.0]),
+                'y_data': np.array([2.0, 2.0, 2.0])
+            }
         )
     }
 
@@ -243,12 +279,12 @@ def params_for_div():
 def test_正常系_除算_項が全て_Variable(x0, x1, expects):
     # 順伝播の確認
     y = x0 / x1
-    assert y.data == expects['y_data']
+    assert np.array_equal(y.data, expects['y_data'])
 
     # 逆伝播の確認
     y.backward()
-    assert x0.grad.data == expects['x0_grad']
-    assert x1.grad.data == expects['x1_grad']
+    assert np.array_equal(x0.grad.data, expects['x0_grad'])
+    assert np.array_equal(x1.grad.data, expects['x1_grad'])
 
 
 def params_for_div_left_operand_is_not_variable():

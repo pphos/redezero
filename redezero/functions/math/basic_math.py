@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 
+import redezero
 from redezero import types
 from redezero import function
 from redezero import variable
@@ -28,6 +29,9 @@ class Add(function.Function):
     def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
         gx0, gx1 = gy, gy
         # 形状が異なる場合にはブロードキャスト
+        if self.x0_shape != self.x1_shape:
+            gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
+            gx1 = redezero.functions.sum_to(gx1, self.x1_shape)
         return gx0, gx1
 
 
@@ -64,6 +68,10 @@ class Mul(function.Function):
         gx0 = gy * x1
         gx1 = gy * x0
         # 形状が異なる場合にはブロードキャスト
+        if x0.shape != x1.shape:
+            gx0 = redezero.functions.sum_to(gx0, x0.shape)
+            gx1 = redezero.functions.sum_to(gx1, x1.shape)
+
         return gx0, gx1
 
 
@@ -135,6 +143,9 @@ class Sub(function.Function):
         gx0 = gy
         gx1 = -gy
         # 形状が異なる場合にはブロードキャスト
+        if self.x0_shape != self.x1_shape:
+            gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
+            gx1 = redezero.functions.sum_to(gx1, self.x1_shape)
         return gx0, gx1
 
 
@@ -189,6 +200,9 @@ class Div(function.Function):
         gx0 = gy / x1
         gx1 = gy * (-x0 / x1 ** 2)
         # 形状が異なる場合にはブロードキャスト
+        if x0.shape != x1.shape:
+            gx0 = redezero.functions.sum_to(gx0, x0.shape)
+            gx1 = redezero.functions.sum_to(gx1, x1.shape)
         return gx0, gx1
 
 
