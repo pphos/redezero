@@ -226,7 +226,7 @@ class Variable:
         retain_grad : bool
             変数が勾配を保持するかのフラグ
         create_graph: bool
-            逆伝播を有効にするかのフラグ
+            逆伝播で行う計算に対してさらに逆伝播を行うかのフラグ
         """
         if self.grad is None:
             # y.gradの微分値を設定
