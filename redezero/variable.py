@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, cast
+from typing import Optional, Sequence, cast
 import heapq
 import numpy as np
 
@@ -307,6 +307,37 @@ class Variable:
         if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
             shape = shape[0]
         return redezero.functions.reshape(self, shape)
+
+    def transpose(self, *axes: int) -> Variable:
+        """行列の転置を行う
+
+        Parameters
+        ----------
+        *axes : int
+            転置を行う行列の軸
+
+        Returns
+        ----------
+        ~redezero.Variable
+            転置後のVariableインスタンス
+
+        Examples
+        -----------
+        >>> x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        >>> y = x.transpose()
+        >>> y
+        variable([[1 2]
+                  [3 4]
+                  [5 6]])
+        """
+        _axes: Optional[Sequence[int]] = axes
+        if len(axes) == 0:
+            _axes = None
+        elif len(axes) == 1:
+            if isinstance(axes[0], (tuple, list)) or axes[0] is None:
+                _axes = axes[0]
+
+        return redezero.functions.transpose(self, _axes)
 
 
 def as_variable(obj) -> Variable:

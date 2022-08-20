@@ -103,3 +103,39 @@ class TestVariable:
         # 逆伝播の確認
         y.backward()
         assert x.grad.shape == x.shape
+
+    def params_for_transpose():
+        """正常系_transpose動作のパラメータ
+        """
+        x = Variable(np.random.randn(1, 2, 3, 4))
+
+        return {
+            'axesがNone': (x, None, (4, 3, 2, 1)),
+            'axesがタプル': (x, (1, 0, 3, 2), (2, 1, 4, 3)),
+            'axesがリスト': (x, [1, 0, 3, 2], (2, 1, 4, 3))
+        }
+
+    @pytest.mark.parametrize(
+        'x, axes, expect',
+        params_for_transpose().values(),
+        ids=params_for_transpose().keys()
+    )
+    def test_正常系_transpose動作(self, x, axes, expect):
+        # 順伝播の確認
+        y = x.transpose(axes)
+        assert y.shape == expect
+
+        # 逆伝播の確認
+        y.backward()
+        assert x.grad.shape == x.shape
+
+    def test_正常系_transpose動作_引数が可変長(self):
+        x = Variable(np.random.randn(1, 2, 3, 4))
+
+        # 順伝播の確認
+        y = x.transpose(1, 0, 3, 2)
+        assert y.shape == (2, 1, 4, 3)
+
+        # 逆伝播の確認
+        y.backward()
+        assert x.grad.shape == x.shape
