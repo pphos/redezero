@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 
+from redezero.functions.math.basic_math import Add, Pow
 from redezero import Variable
 
 
@@ -78,6 +79,44 @@ class TestVariable:
         print(y)
         out, _ = capfd.readouterr()
         assert out == msg
+
+    def params_for_backward():
+        """正常系_逆伝播のパラメータ
+        """
+        return {
+            '中間変数が勾配を保持しない': (False,),
+            '中間変数が勾配を保持する': (True,)
+        }
+
+    @pytest.mark.parametrize(
+        'retain_grad',
+        params_for_backward().values(),
+        ids=params_for_backward().keys()
+    )
+    def test_正常系_逆伝播(self, retain_grad):
+        # ゼロから作るDeep Learning 3 P107参照
+        x = Variable(np.array(2.0))
+        expect = np.array(64.0)
+
+        # 関数定義
+        fs = [Pow(2), Pow(2), Pow(2), Add()]
+        # 演算
+        a = fs[0].apply((x,))[0]
+        b = fs[1].apply((a,))[0]
+        c = fs[2].apply((a,))[0]
+        y = fs[3].apply((b, c))[0]
+
+        # 逆伝播の実施
+        y.backward(retain_grad=retain_grad)
+        assert x.grad.data == expect
+
+        # 中間変数の勾配確認
+        middles = [a, b, c]
+        for middle in middles:
+            if retain_grad:
+                assert middle.grad is not None
+            else:
+                assert middle.grad is None
 
     def test_正常系_勾配のリセット(self):
         x = Variable(np.array(3.0))
