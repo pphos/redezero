@@ -65,6 +65,7 @@ class Variable:
     name: Optional[str]
     grad: Optional[Variable]
     creator: Optional[function.Function]
+    generation: int
 
     def __init__(self, data: np.ndarray, name=None) -> None:
         """Variableインスタンスの初期化
