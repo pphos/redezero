@@ -46,7 +46,7 @@ class TestVariable:
 
         assert str(e.value) == f'{type(x)} is not supported.'
 
-    def test_正常系len動作(self):
+    def test_正常系_len動作(self):
         x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
         assert len(x) == 2
 
