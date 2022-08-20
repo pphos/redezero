@@ -115,6 +115,25 @@ class TestVariable:
             else:
                 assert middle.grad is None
 
+    def test_正常系_逆伝播_高階微分(self):
+        x = Variable(np.array(3.0))
+        y = x ** 3
+        expects = {
+            'gx': np.array(27.0),
+            'gx2': np.array(18.0)
+        }
+
+        # 逆伝播の実施
+        y.backward(create_graph=True)
+        gx = x.grad
+        assert gx.data == expects['gx']
+
+        # 2階微分
+        x.cleargrad()
+        gx.backward()
+        gx2 = x.grad
+        assert gx2.data == expects['gx2']
+
     def test_正常系_勾配のリセット(self):
         x = Variable(np.array(3.0))
         expect = np.array(3.0)

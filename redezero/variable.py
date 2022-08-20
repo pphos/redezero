@@ -264,10 +264,9 @@ class Variable:
                 casted_output = cast(Variable, output())
                 gys.append(casted_output.grad)
 
-            gxs = f.backward(*gys)
-            tupled_gxs = gxs if isinstance(gxs, tuple) else (gxs,)
-
             with configuration.using_config('enable_backprop', create_graph):
+                gxs = f.backward(*gys)
+                tupled_gxs = gxs if isinstance(gxs, tuple) else (gxs,)
                 for x, gx in zip(f.inputs, tupled_gxs):
                     if x.grad is None:
                         x.grad = gx
