@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import cast, Sequence
+from typing import cast, Sequence, Optional
 import numpy as np
 
 from redezero import types
@@ -89,3 +89,58 @@ def sum_to(x: np.ndarray, shape: Sequence[int]) -> np.ndarray:
         # 不要な軸の削除
         y = y.squeeze(lead_axis)
     return y
+
+
+def reshape_sum_backward(gy: variable.Variable, x_shape: tuple,
+                         axis: Optional[tuple[int] | int], keepdims: bool) -> variable.Variable:
+    """gyの形状をx_shapeにブロードキャスト可能なように調整する
+
+    Parameters
+    ----------
+    gy: Variable
+        逆伝播により求めた勾配
+    x_shape: tuple
+        sum関数の順伝播で利用した入力の形状
+    axis: Optional[tuple[int] | int]
+        sum関数の順伝播で利用したaxis
+    keepdims: bool
+        sum関数の順伝播で利用したkeepdims
+
+    Returns
+    -------
+    Variable:
+        gyの形状をx_shapeに変換した勾配
+
+    Examples
+    --------
+    >>> gy = Variable(np.ones(3 * 5, dtype='int64')).reshape(3, 5)
+    >>> aranged_gy = reshape_sum_backward(gy, x_shape=(3, 4, 5), axis=1, keepdims=False)
+    >>> aranged_gy
+    [[[1 1 1 1 1],
+      [1 1 1 1 1],
+      [1 1 1 1 1]]]
+    >>> aranged_gy.shape
+    (3, 1, 5)
+    """
+    target_ndim = len(x_shape)
+
+    # 和をとった後の軸番号をタプル形式にする
+    tupled_axis = axis
+    if axis is None:
+        tupled_axis = None
+    elif not isinstance(axis, tuple):
+        tupled_axis = (axis,)
+
+    # 順伝播時に削除された軸を復元
+    if not (target_ndim == 0 or tupled_axis is None or keepdims):
+        # 軸を負数を使わない表記に変換
+        actual_axis = [a if a >= 0 else a + target_ndim for a in cast(tuple, tupled_axis)]
+        shape: list[int] = list(gy.shape)
+        for a in sorted(actual_axis):
+            shape.insert(a, 1)
+    else:
+        # 軸の調整が不要な場合は現在の形状を保持
+        shape = list(gy.shape)
+
+    gy = gy.reshape(*shape)
+    return gy

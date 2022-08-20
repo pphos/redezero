@@ -85,3 +85,31 @@ def test_sum_to動作(x, shape, expect):
     x = np.ones(3 * 4 * 5, dtype='int64').reshape(3, 4, 5)
     y = utils.sum_to(x, shape)
     assert np.array_equal(y, expect)
+
+
+def params_for_reshape_sum_backward():
+    """正常系_reshape_sum_backward動作のパラメータ
+    """
+    x_shape = (3, 4, 5)
+    gy = Variable(np.ones(3 * 5, dtype='int64').reshape(3, 5))
+
+    return {
+        '正常系_軸の調整が必要': (
+            gy, x_shape, 1, False, gy.reshape(3, 1, 5).data
+        ),
+        '正常系_軸の調整が不要': (
+            gy, x_shape, 1, True, gy.data
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    'gy, x_shape, axis, keepdims, expect_aranged_gy_data',
+    params_for_reshape_sum_backward().values(),
+    ids=params_for_reshape_sum_backward().keys()
+)
+def test_正常系_reshape_sum_backward動作(gy, x_shape, axis, keepdims, expect_aranged_gy_data):
+    # 逆伝播の入力の形状を調整
+    aranged_gy = utils.reshape_sum_backward(gy, x_shape, axis, keepdims)
+
+    assert np.array_equal(aranged_gy.data, expect_aranged_gy_data)
