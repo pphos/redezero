@@ -1,5 +1,6 @@
 import pytest
 import shutil
+import filecmp
 import numpy as np
 from pathlib import Path
 
@@ -145,3 +146,9 @@ def test_正常系_計算グラフをGraphvizで画像に変換(dot_graph):
     z = goldstein(x, y)
     z.backward()
     z.name = 'z'
+
+    # 計算グラフから画像の生成
+    utils.plot_dot_graph(z, verbose=False, to_file=dot_graph['actual'])
+
+    # 出力画像の比較
+    assert filecmp.cmp(dot_graph['actual'], dot_graph['expect'])
