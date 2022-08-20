@@ -24,6 +24,7 @@ class Function:
     """
     inputs: tuple[variable.Variable, ...]
     outputs: list[ReferenceType[variable.Variable]]
+    generation: int
 
     def apply(self, inputs: tuple[types.OperandValue, ...]) -> list[variable.Variable]:
         """出力変数の計算を行い計算グラフへ追加
