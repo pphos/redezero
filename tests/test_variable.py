@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 
-from redezero.functions.math.basic_math import Add, Pow
 from redezero import Variable
 
 
@@ -98,13 +97,11 @@ class TestVariable:
         x = Variable(np.array(2.0))
         expect = np.array(64.0)
 
-        # 関数定義
-        fs = [Pow(2), Pow(2), Pow(2), Add()]
         # 演算
-        a = fs[0].apply((x,))[0]
-        b = fs[1].apply((a,))[0]
-        c = fs[2].apply((a,))[0]
-        y = fs[3].apply((b, c))[0]
+        a = x ** 2
+        b = a ** 2
+        c = a ** 2
+        y = b + c
 
         # 逆伝播の実施
         y.backward(retain_grad=retain_grad)
