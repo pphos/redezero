@@ -17,6 +17,12 @@ docker compose up -d
 docker compose run redezero poetry install
 ```
 
+3. 型チェックとテスト実施
+```
+docker compose run redezero poetry run mypy redezero/
+docker compose run redezero poetry run pytest
+```
+
 ## コミットプレフィックス
 以下の[Angularのコミットプレフィックス](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#type)を採用
 
