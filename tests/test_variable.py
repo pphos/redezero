@@ -79,6 +79,20 @@ class TestVariable:
         out, _ = capfd.readouterr()
         assert out == msg
 
+    def test_正常系_勾配のリセット(self):
+        x = Variable(np.array(3.0))
+        expect = np.array(3.0)
+
+        # 1回目の計算
+        y1 = 2 * x
+        y1.backward()
+
+        # 勾配のリセット
+        x.cleargrad()
+        y2 = 3 * x
+        y2.backward()
+        assert x.grad.data == expect
+
     def params_for_reshape():
         """正常系_reshape動作のパラメータ
         """
