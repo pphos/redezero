@@ -1,13 +1,13 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import cast
+from typing import Optional
 import subprocess
 
-from redezero import variable
+import redezero
 from redezero import function
 
 
-def _dot_var(v: variable.Variable, verbose: bool = False) -> str:
+def _dot_var(v: redezero.Variable, verbose: bool = False) -> str:
     """VariableをDOT言語の文字列へ変換する
 
     Parameters
@@ -54,7 +54,7 @@ def _dot_func(f: function.Function) -> str:
     return txt
 
 
-def get_dot_graph(output: variable.Variable, verbose: bool = True) -> str:
+def get_dot_graph(output: redezero.Variable, verbose: bool = True) -> str:
     """計算グラフからDOT言語へ変換する
 
     Parameters
@@ -73,14 +73,14 @@ def get_dot_graph(output: variable.Variable, verbose: bool = True) -> str:
     funcs: list[function.Function] = []
     seen_set = set()
 
-    def add_func(f: function.Function) -> None:
+    def add_func(f: Optional[function.Function]) -> None:
         """関数の追加
         """
-        if f not in seen_set:
+        if (f not in seen_set) and (f is not None):
             funcs.append(f)
             seen_set.add(f)
 
-    add_func(cast(function.Function, output.creator))
+    add_func(output.creator)
     txt += _dot_var(output, verbose)
 
     while funcs:
@@ -95,7 +95,7 @@ def get_dot_graph(output: variable.Variable, verbose: bool = True) -> str:
     return 'digraph g {\n' + txt + '}'
 
 
-def plot_dot_graph(output: variable.Variable, verbose: bool = True, to_file: str = 'graph.png') -> None:
+def plot_dot_graph(output: redezero.Variable, verbose: bool = True, to_file: str = 'graph.png') -> None:
     """計算グラフをGraphvizで画像に変換する
 
     Parameters

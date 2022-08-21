@@ -1,12 +1,13 @@
 from __future__ import annotations
 from typing import cast, Sequence, Optional
 import numpy as np
+import numpy.typing as npt
 
+import redezero
 from redezero import types
-from redezero import variable
 
 
-def force_array(x: np.ndarray | types.ScalarValue) -> np.ndarray:
+def force_array(x: npt.NDArray | types.ScalarValue) -> npt.NDArray:
     """0次元配列の演算で`numpy.ndarray`の返却を強制する
 
     `Function`オブジェクトが`numpy.ndarray`を返却する必要があるため, 0次元配列を変換する必要がある
@@ -21,10 +22,10 @@ def force_array(x: np.ndarray | types.ScalarValue) -> np.ndarray:
     numpy.ndarray
         入力値を変換した:class:`numpy.ndarray`
     """
-    if np.isscalar(x):
-        return np.array(x)
+    if not isinstance((converted_x := x), np.ndarray):
+        converted_x = np.array(x)
 
-    return cast(np.ndarray, x)
+    return converted_x
 
 
 def force_operand_value(x: types.ScalarValue | types.OperandValue) -> types.OperandValue:
@@ -41,7 +42,7 @@ def force_operand_value(x: types.ScalarValue | types.OperandValue) -> types.Oper
         入力値を変換した:class:`numpy.ndarray`か入力値の:class:`~redezero.Variable`
     """
     converted_x = x
-    if isinstance(x, variable.Variable):
+    if isinstance(x, redezero.Variable):
         converted_x = x
     else:
         converted_x = force_array(x)
@@ -49,19 +50,19 @@ def force_operand_value(x: types.ScalarValue | types.OperandValue) -> types.Oper
     return converted_x
 
 
-def sum_to(x: np.ndarray, shape: Sequence[int]) -> np.ndarray:
+def sum_to(x: npt.NDArray, shape: Sequence[int]) -> npt.NDArray:
     """xの要素和を求めてshapeの形状にする
 
     Parameters
     ----------
-    x : np.ndarray
+    x : npt.NDArray
         入力配列
     shape : Sequence[int]
         出力配列の形状
 
     Returns
     -------
-    np.ndarray
+    npt.NDArray
         形状変更後の配列
 
     Examples
@@ -84,15 +85,15 @@ def sum_to(x: np.ndarray, shape: Sequence[int]) -> np.ndarray:
     # 要素が複製される軸がない場合は空のタプルとなる
     axis = tuple([i + lead for i, sx in enumerate(shape) if sx == 1])
     # 複製した要素の和を取得
-    y: np.ndarray = x.sum(lead_axis + axis, keepdims=True)
+    y: npt.NDArray = x.sum(lead_axis + axis, keepdims=True)
     if lead > 0:
         # 不要な軸の削除
         y = y.squeeze(lead_axis)
     return y
 
 
-def reshape_sum_backward(gy: variable.Variable, x_shape: tuple,
-                         axis: Optional[tuple[int] | int], keepdims: bool) -> variable.Variable:
+def reshape_sum_backward(gy: redezero.Variable, x_shape: tuple,
+                         axis: Optional[tuple[int] | int], keepdims: bool) -> redezero.Variable:
     """gyの形状をx_shapeにブロードキャスト可能なように調整する
 
     Parameters

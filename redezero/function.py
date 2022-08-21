@@ -1,7 +1,6 @@
 from __future__ import annotations
-from typing import cast
 from weakref import ref, ReferenceType
-import numpy as np
+import numpy.typing as npt
 
 from redezero import types
 from redezero import configuration
@@ -33,7 +32,7 @@ class Function:
 
         Parameters
         ----------
-        inputs : tuple[~redezero.Variable | np.ndarray, ...]
+        inputs : tuple[~redezero.Variable | numpy.ndarray, ...]
             関数の入力変数
 
         Returns
@@ -59,7 +58,7 @@ class Function:
 
         return outputs
 
-    def forward(self, xs) -> tuple[np.ndarray, ...]:
+    def forward(self, xs) -> tuple[npt.NDArray, ...]:
         """入力配列に対する順伝播の実施
 
         Parameters

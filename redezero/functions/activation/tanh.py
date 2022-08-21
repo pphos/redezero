@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import cast
 import numpy as np
+import numpy.typing as npt
 
+import redezero
 from redezero import utils
 from redezero import types
-from redezero import variable
 from redezero import function
 
 
@@ -12,17 +12,24 @@ class Tanh(function.Function):
     """Tanhクラス
     """
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = np.tanh(x)
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
-        casted_y = cast(variable.Variable, self.outputs[0]())
-        gx = gy * (1 - casted_y * casted_y)
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
+        y_ref = self.outputs[0]
+
+        if (y := y_ref()) is None:
+            # 参照できるデータがないときはもう一度データを取得するしくみを導入する
+            # 参照: Chainer: get_retained_outputs
+            # https://github.com/chainer/chainer/blob/536cda7c9a146b9198f83837ba439a5afbdc074d/chainer/function_node.py#L909
+            raise NotImplementedError()
+        else:
+            gx = gy * (1 - y * y)
         return gx
 
 
-def tanh(x: types.OperandValue) -> variable.Variable:
+def tanh(x: types.OperandValue) -> redezero.Variable:
     """tanh関数
 
     Parameters

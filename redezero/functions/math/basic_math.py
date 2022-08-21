@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 
 import redezero
 from redezero import types
 from redezero import function
-from redezero import variable
 from redezero import utils
 
 
@@ -21,12 +21,12 @@ class Add(function.Function):
     x0_shape: tuple
     x1_shape: tuple
 
-    def forward(self, x0: np.ndarray, x1: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
         y = x0 + x1
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
         gx0, gx1 = gy, gy
         # 形状が異なる場合にはブロードキャスト
         if self.x0_shape != self.x1_shape:
@@ -35,14 +35,14 @@ class Add(function.Function):
         return gx0, gx1
 
 
-def add(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def add(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """加算
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -59,11 +59,11 @@ class Mul(function.Function):
     """乗算クラス
     """
 
-    def forward(self, x0: np.ndarray, x1: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = x0 * x1
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
         x0, x1 = self.inputs
         gx0 = gy * x1
         gx1 = gy * x0
@@ -75,14 +75,14 @@ class Mul(function.Function):
         return gx0, gx1
 
 
-def mul(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def mul(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """乗算
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -98,19 +98,19 @@ class Neg(function.Function):
     """負数クラス
     """
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         return utils.force_array(-x)
 
-    def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
         return -gy,
 
 
-def neg(x: types.OperandValue) -> variable.Variable:
+def neg(x: types.OperandValue) -> redezero.Variable:
     """負数
 
     Parameters
     ----------
-    x : types.OperandValue
+    x : numpy.ndarray | ~redezero.Variable
         演算の項
 
     Returns
@@ -134,12 +134,12 @@ class Sub(function.Function):
     x0_shape: tuple
     x1_shape: tuple
 
-    def forward(self, x0: np.ndarray, x1: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
         y = x0 - x1
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
         gx0 = gy
         gx1 = -gy
         # 形状が異なる場合にはブロードキャスト
@@ -149,14 +149,14 @@ class Sub(function.Function):
         return gx0, gx1
 
 
-def sub(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def sub(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """減算
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -168,14 +168,14 @@ def sub(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> v
     return Sub().apply((x0, converted_x1))[0]
 
 
-def rsub(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def rsub(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """減算(右辺)
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -191,11 +191,11 @@ class Div(function.Function):
     """除算クラス
     """
 
-    def forward(self, x0: np.ndarray, x1: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = x0 / x1
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> tuple[variable.Variable, ...]:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
         x0, x1 = self.inputs
         gx0 = gy / x1
         gx1 = gy * (-x0 / x1 ** 2)
@@ -206,14 +206,14 @@ class Div(function.Function):
         return gx0, gx1
 
 
-def div(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def div(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """除算
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -225,14 +225,14 @@ def div(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> v
     return Div().apply((x0, converted_x1))[0]
 
 
-def rdiv(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> variable.Variable:
+def rdiv(x0: types.OperandValue, x1: types.ScalarValue | types.OperandValue) -> redezero.Variable:
     """除算 (右辺)
 
     Parameters
     ----------
-    x0 : types.OperandValue
+    x0 : numpy.ndarray | ~redezero.Variable
         演算の左項
-    x1 : types.ScalarValue | types.OperandValue
+    x1 : types.ScalarValue | numpy.ndarray | ~redezero.Variable
         演算の右項
 
     Returns
@@ -251,25 +251,25 @@ class Pow(function.Function):
     def __init__(self, c: int) -> None:
         self.c: int = c
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = x ** self.c
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         x = self.inputs[0]
         c = self.c
         gx = c * x ** (c - 1) * gy
         return gx
 
 
-def pow(x: types.OperandValue, c: int) -> variable.Variable:
+def pow(x: types.OperandValue, c: int) -> redezero.Variable:
     """累乗
 
     Parameters
     ----------
-    x : types.OperandValue
+    x : numpy.ndarray | ~redezero.Variable
         底となる項
-    x1 : int
+    c : int
         乗数
 
     Returns

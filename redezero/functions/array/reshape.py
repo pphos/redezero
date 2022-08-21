@@ -1,7 +1,7 @@
 from __future__ import annotations
-import numpy as np
+import numpy.typing as npt
 
-from redezero import variable
+import redezero
 from redezero import function
 from redezero import types
 
@@ -22,16 +22,16 @@ class Reshape(function.Function):
     def __init__(self, shape: tuple) -> None:
         self.shape = shape
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         self.x_shape = x.shape
         y = x.reshape(self.shape)
         return y
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         return reshape(gy, self.x_shape)
 
 
-def reshape(x: types.OperandValue, shape: tuple) -> variable.Variable:
+def reshape(x: types.OperandValue, shape: tuple) -> redezero.Variable:
     """入力配列の形状変更をコピーなしで実施
 
     Parameters
@@ -56,5 +56,5 @@ def reshape(x: types.OperandValue, shape: tuple) -> variable.Variable:
     array([1, 2, 3, 4, 5, 6, 7, 8])
     """
     if x.shape == shape:
-        return variable.as_variable(x)
+        return redezero.as_variable(x)
     return Reshape(shape).apply((x,))[0]

@@ -1,6 +1,6 @@
-import numbers
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 
 from redezero import variable
 
@@ -11,10 +11,9 @@ ScalarValue = tp.Union[
     str,
     int,
     float,
-    memoryview,
 ]
 
 OperandValue = tp.Union[
     variable.Variable,
-    np.ndarray
+    npt.NDArray
 ]

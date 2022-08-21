@@ -1,8 +1,9 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 from typing import Optional, Sequence
 
-from redezero import variable
+import redezero
 from redezero import function
 from redezero import types
 
@@ -20,11 +21,11 @@ class Transpose(function.Function):
     def __init__(self, axes: Optional[Sequence[int]] = None):
         self.axes = axes
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = x.transpose(self.axes)
         return y
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         if self.axes is None:
             return transpose(gy)
 
@@ -34,7 +35,7 @@ class Transpose(function.Function):
         return transpose(gy, inv_axes)
 
 
-def transpose(x: types.OperandValue, axes: Optional[Sequence[int]] = None) -> variable.Variable:
+def transpose(x: types.OperandValue, axes: Optional[Sequence[int]] = None) -> redezero.Variable:
     """行列の転置を実施
 
     Parameters

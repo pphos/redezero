@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 
 import redezero
 from redezero import utils
 from redezero import types
-from redezero import variable
 from redezero import function
 
 
@@ -24,17 +24,17 @@ class SumTo(function.Function):
     def __init__(self, shape: tuple) -> None:
         self.shape = shape
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         self.x_shape = x.shape
         y = utils.sum_to(x, self.shape)
         return y
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         gx = redezero.functions.broadcast_to(gy, self.x_shape)
         return gx
 
 
-def sum_to(x: types.OperandValue, shape: tuple) -> variable.Variable:
+def sum_to(x: types.OperandValue, shape: tuple) -> redezero.Variable:
     """軸に沿って配列の要素を足し合わせ, 指定された形状の配列を出力する
 
     Parameters

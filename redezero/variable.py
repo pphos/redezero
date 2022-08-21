@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Optional, Sequence, cast
+from typing import Optional, Sequence
 import heapq
 import numpy as np
+import numpy.typing as npt
 
 from redezero import configuration
 from redezero import function
@@ -61,18 +62,18 @@ class Variable:
     __rtruediv__ = basic_math.rdiv
     __pow__ = basic_math.pow
 
-    data: np.ndarray
+    data: npt.NDArray
     name: Optional[str]
     grad: Optional[Variable]
     creator: Optional[function.Function]
     generation: int
 
-    def __init__(self, data: np.ndarray, name=None) -> None:
+    def __init__(self, data: npt.NDArray, name=None) -> None:
         """Variableインスタンスの初期化
 
         Parameters
         ----------
-        data : np.ndarray
+        data : npt.NDArray
             :class:`Variable`のdocstringを参照
         name : Optional[str]
             :class:`Variable`のdocstringを参照
@@ -86,7 +87,7 @@ class Variable:
             if not isinstance(data, np.ndarray):
                 raise TypeError(f'{type(data)} is not supported.')
 
-        self.data: np.ndarray = data
+        self.data: npt.NDArray = data
         self.name: Optional[str] = name
         self.grad: Optional[Variable] = None
         self.creator: Optional[function.Function] = None
@@ -158,7 +159,7 @@ class Variable:
         >>> x.dtype
         dtype('int64')
         """
-        return cast(np.dtype, self.data.dtype)
+        return self.data.dtype
 
     def __len__(self) -> int:
         """配列の最初の次元の要素数を返却
@@ -237,32 +238,32 @@ class Variable:
         # (関数のbackwardメソッドが誤って複数回呼ばれることを防ぐ)
         seen_set: set[function.Function] = set()
 
-        def add_func(f: function.Function) -> None:
+        def add_func(f: Optional[function.Function]) -> None:
             """逆伝播対象の関数追加
 
             逆伝播対象の関数を追加するたびに世代の昇順ソート実施
 
             Parameters
             ----------
-            f : Function
+            f : Optinal[Function]
                 逆伝播対象のFunction
             """
-            if f not in seen_set:
+            if (f not in seen_set) and (f is not None):
                 # heapqは最小値を取り出す仕組みのため, generationを負数に変換
                 # Chainer _backprop.pyの下記処理を参考
                 # https://github.com/chainer/chainer/blob/536cda7c9a146b9198f83837ba439a5afbdc074d/chainer/_backprop.py#L161
                 heapq.heappush(funcs, (-f.generation, len(seen_set), f))
                 seen_set.add(f)
-        add_func(cast(function.Function, self.creator))
+        add_func(self.creator)
 
         # 逆伝播のメイン処理
         # 出力から順にたどる関数がなくなるまで計算
         while funcs:
             f: function.Function = heapq.heappop(funcs)[2]
             gys: list[Optional[Variable]] = []
-            for output in f.outputs:
-                casted_output = cast(Variable, output())
-                gys.append(casted_output.grad)
+            for output_ref in f.outputs:
+                if (output := output_ref()) is not None:
+                    gys.append(output.grad)
 
             with configuration.using_config('enable_backprop', create_graph):
                 gxs = f.backward(*gys)
@@ -280,9 +281,9 @@ class Variable:
 
             if not retain_grad:
                 # 途中の変数の微分値をすべてリセット (不要なメモリ確保を防ぐため)
-                for y in f.outputs:
-                    casted_y = cast(Variable, y())
-                    casted_y.grad = None
+                for y_ref in f.outputs:
+                    if (y := y_ref()) is not None:
+                        y.grad = None
 
     def reshape(self, *shape: int) -> Variable:
         """配列の形状を変更する

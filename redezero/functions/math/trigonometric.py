@@ -1,9 +1,10 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 
+import redezero
 from redezero import utils
 from redezero import types
-from redezero import variable
 from redezero import function
 
 
@@ -11,17 +12,17 @@ class Sin(function.Function):
     """Sinクラス
     """
 
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = np.sin(x)
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         x, = self.inputs
         gx = gy * cos(x)
         return gx
 
 
-def sin(x: types.OperandValue) -> variable.Variable:
+def sin(x: types.OperandValue) -> redezero.Variable:
     """sin関数
 
     Parameters
@@ -38,17 +39,17 @@ def sin(x: types.OperandValue) -> variable.Variable:
 
 
 class Cos(function.Function):
-    def forward(self, x: np.ndarray) -> np.ndarray:  # type: ignore[override]
+    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
         y = np.cos(x)
         return utils.force_array(y)
 
-    def backward(self, gy: variable.Variable) -> variable.Variable:  # type: ignore[override]
+    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
         x, = self.inputs
         gx = gy * -sin(x)
         return gx
 
 
-def cos(x: types.OperandValue) -> variable.Variable:
+def cos(x: types.OperandValue) -> redezero.Variable:
     """cos関数
 
     Parameters
