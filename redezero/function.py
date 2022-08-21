@@ -1,10 +1,19 @@
 from __future__ import annotations
+import contextlib
 from weakref import ref, ReferenceType
 import numpy.typing as npt
 
 from redezero import types
 from redezero import configuration
 from redezero import variable
+
+
+def no_grad() -> contextlib._GeneratorContextManager[None]:
+    """逆伝播の無効化
+
+    using_config('enable_backprop', False)のショートハンド
+    """
+    return configuration.using_config('enable_backprop', False)
 
 
 class Function:

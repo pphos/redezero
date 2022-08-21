@@ -1,10 +1,7 @@
-import pytest
 import numpy as np
 
-from redezero import utils
 from redezero import function
 from redezero import Variable
-from redezero import configuration
 
 
 class SimpleFunction(function.Function):
@@ -20,7 +17,7 @@ class TestFunction:
         x = Variable(np.array(1.0))
         expect = np.array(1.0)
 
-        with configuration.no_grad():
+        with function.no_grad():
             f = SimpleFunction()
             y = f.apply((x,))[0]
 

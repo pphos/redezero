@@ -30,11 +30,3 @@ def using_config(name: str, value: bool) -> Iterator[None]:
         yield
     finally:
         setattr(Config, name, old_value)
-
-
-def no_grad() -> contextlib._GeneratorContextManager[None]:
-    """逆伝播の無効化
-
-    using_config('enable_backprop', False)のショートハンド
-    """
-    return using_config('enable_backprop', False)
