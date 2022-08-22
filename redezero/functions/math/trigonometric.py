@@ -16,7 +16,7 @@ class Sin(function.Function):
         y = np.sin(xs[0])
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx = gys[0] * cos(xs[0])
         return gx,
@@ -43,7 +43,7 @@ class Cos(function.Function):
         y = np.cos(xs[0])
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx = gys[0] * -sin(xs[0])
         return gx,

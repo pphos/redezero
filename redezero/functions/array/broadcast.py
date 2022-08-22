@@ -28,7 +28,7 @@ class BroadCastTo(function.Function):
         y = np.broadcast_to(xs[0], self.shape)
         return y,
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gy: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx = redezero.functions.sum_to(gy[0], self.x_shape)
         return gx,

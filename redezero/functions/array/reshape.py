@@ -28,7 +28,7 @@ class Reshape(function.Function):
         y = x.reshape(self.shape)
         return y,
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         return reshape(gys[0], self.x_shape),
 

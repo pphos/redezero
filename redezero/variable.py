@@ -265,11 +265,8 @@ class Variable:
                 if ((output := output_ref()) is not None) and (output.grad is not None):
                     gys.append(output.grad)
 
-            in_data = tuple([x.data for x in f.inputs])
-            out_grad = tuple(gys)
-
             with configuration.using_config('enable_backprop', create_graph):
-                gxs = f.backward(in_data, out_grad)
+                gxs = f.backward(f.inputs, tuple(gys))
                 for x, gx in zip(f.inputs, gxs):
                     if x.grad is None:
                         x.grad = gx

@@ -11,16 +11,18 @@ from redezero import function
 class Tanh(function.Function):
     """Tanhクラス
     """
-    y: npt.NDArray
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
-        self.y = utils.force_array(np.tanh(xs[0]))
-        return self.y,
+        y = utils.force_array(np.tanh(xs[0]))
+        return y,
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        gx = gys[0] * (1 - self.y * self.y)
-        return gx
+        y = self.outputs[0]()
+        if y is None:
+            raise RuntimeError('cannnot retain variable data: the variable has already been released.')
+        gx = gys[0] * (1 - y * y)
+        return gx,
 
 
 def tanh(x: types.OperandValue) -> redezero.Variable:

@@ -27,7 +27,7 @@ class Add(function.Function):
         y = x0 + x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx0, gx1 = gys[0], gys[0]
         # 形状が異なる場合にはブロードキャスト
@@ -66,7 +66,7 @@ class Mul(function.Function):
         y = x0 * x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         x0, x1 = xs
         gx0 = gys[0] * x1
@@ -105,7 +105,7 @@ class Neg(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         return utils.force_array(-xs[0]),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         return -gys[0],
 
@@ -145,7 +145,7 @@ class Sub(function.Function):
         y = x0 - x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx0 = gys[0]
         gx1 = -gys[0]
@@ -203,7 +203,7 @@ class Div(function.Function):
         y = x0 / x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         x0, x1 = xs
         gx0 = gys[0] / x1
@@ -264,7 +264,7 @@ class Pow(function.Function):
         y = xs[0] ** self.c
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         x = xs[0]
         c = self.c

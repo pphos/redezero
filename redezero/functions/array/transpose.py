@@ -25,15 +25,15 @@ class Transpose(function.Function):
         y = xs[0].transpose(self.axes)
         return y,
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         if self.axes is None:
-            return transpose(gys[0])
+            return transpose(gys[0]),
 
         axes_len = len(self.axes)
         # 逆伝播では順伝播と逆向きに軸を置き換える
         inv_axes = tuple(np.argsort([ax % axes_len for ax in self.axes]))
-        return transpose(gys[0], inv_axes)
+        return transpose(gys[0], inv_axes),
 
 
 def transpose(x: types.OperandValue, axes: Optional[Sequence[int]] = None) -> redezero.Variable:

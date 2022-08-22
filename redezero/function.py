@@ -53,8 +53,7 @@ class Function:
         variable_inputs = tuple([variable.as_variable(x) for x in inputs])
         xs = tuple([x.data for x in variable_inputs])
         ys = self.forward(xs)
-        tupled_ys = ys if isinstance(ys, tuple) else (ys,)
-        outputs = [variable.Variable(y) for y in tupled_ys]
+        outputs = [variable.Variable(y) for y in ys]
 
         if configuration.Config.enable_backprop:
             self.generation: int = max([x.generation for x in variable_inputs])
@@ -82,14 +81,14 @@ class Function:
         """
         raise NotImplementedError()
 
-    def backward(self, xs: tuple[npt.NDArray, ...],
+    def backward(self, xs: tuple[redezero.Variable, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         """勾配配列に対する逆伝播の実施
 
         Parameters
         ----------
-        xs : tuple[numpy.ndarray, ...]
-            逆伝播を適用する入力配列S
+        xs : tuple[~redezero.Variable, ...]
+            逆伝播を適用する入力配列
         gys : tuple[~redezero.Variable, ...]
             逆伝播を適用する勾配配列
 
