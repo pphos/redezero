@@ -1,5 +1,4 @@
 from __future__ import annotations
-import numpy as np
 import numpy.typing as npt
 
 import redezero
@@ -24,14 +23,15 @@ class SumTo(function.Function):
     def __init__(self, shape: tuple) -> None:
         self.shape = shape
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        self.x_shape = x.shape
-        y = utils.sum_to(x, self.shape)
-        return y
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.x_shape = xs[0].shape
+        y = utils.sum_to(xs[0], self.shape)
+        return y,
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        gx = redezero.functions.broadcast_to(gy, self.x_shape)
-        return gx
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx = redezero.functions.broadcast_to(gys[0], self.x_shape)
+        return gx,
 
 
 def sum_to(x: types.OperandValue, shape: tuple) -> redezero.Variable:

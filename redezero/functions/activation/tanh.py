@@ -11,21 +11,15 @@ from redezero import function
 class Tanh(function.Function):
     """Tanhクラス
     """
+    y: npt.NDArray
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        y = np.tanh(x)
-        return utils.force_array(y)
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.y = utils.force_array(np.tanh(xs[0]))
+        return self.y,
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        y_ref = self.outputs[0]
-
-        if (y := y_ref()) is None:
-            # 参照できるデータがないときはもう一度データを取得するしくみを導入する
-            # 参照: Chainer: get_retained_outputs
-            # https://github.com/chainer/chainer/blob/536cda7c9a146b9198f83837ba439a5afbdc074d/chainer/function_node.py#L909
-            raise NotImplementedError()
-        else:
-            gx = gy * (1 - y * y)
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx = gys[0] * (1 - self.y * self.y)
         return gx
 
 

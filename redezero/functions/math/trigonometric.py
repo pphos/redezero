@@ -12,14 +12,14 @@ class Sin(function.Function):
     """Sinクラス
     """
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        y = np.sin(x)
-        return utils.force_array(y)
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        y = np.sin(xs[0])
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        x, = self.inputs
-        gx = gy * cos(x)
-        return gx
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx = gys[0] * cos(xs[0])
+        return gx,
 
 
 def sin(x: types.OperandValue) -> redezero.Variable:
@@ -39,14 +39,14 @@ def sin(x: types.OperandValue) -> redezero.Variable:
 
 
 class Cos(function.Function):
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        y = np.cos(x)
-        return utils.force_array(y)
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        y = np.cos(xs[0])
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        x, = self.inputs
-        gx = gy * -sin(x)
-        return gx
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx = gys[0] * -sin(xs[0])
+        return gx,
 
 
 def cos(x: types.OperandValue) -> redezero.Variable:

@@ -23,14 +23,15 @@ class BroadCastTo(function.Function):
     def __init__(self, shape: tuple) -> None:
         self.shape = shape
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        self.x_shape = x.shape
-        y = np.broadcast_to(x, self.shape)
-        return y
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.x_shape = xs[0].shape
+        y = np.broadcast_to(xs[0], self.shape)
+        return y,
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        gx = redezero.functions.sum_to(gy, self.x_shape)
-        return gx
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gy: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx = redezero.functions.sum_to(gy[0], self.x_shape)
+        return gx,
 
 
 def broadcast_to(x: types.OperandValue, shape: tuple) -> redezero.Variable:

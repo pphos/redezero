@@ -21,13 +21,15 @@ class Add(function.Function):
     x0_shape: tuple
     x1_shape: tuple
 
-    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        x0, x1 = xs
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
         y = x0 + x1
-        return utils.force_array(y)
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
-        gx0, gx1 = gy, gy
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx0, gx1 = gys[0], gys[0]
         # 形状が異なる場合にはブロードキャスト
         if self.x0_shape != self.x1_shape:
             gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
@@ -59,14 +61,16 @@ class Mul(function.Function):
     """乗算クラス
     """
 
-    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        x0, x1 = xs
         y = x0 * x1
-        return utils.force_array(y)
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
-        x0, x1 = self.inputs
-        gx0 = gy * x1
-        gx1 = gy * x0
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        x0, x1 = xs
+        gx0 = gys[0] * x1
+        gx1 = gys[0] * x0
         # 形状が異なる場合にはブロードキャスト
         if x0.shape != x1.shape:
             gx0 = redezero.functions.sum_to(gx0, x0.shape)
@@ -98,11 +102,12 @@ class Neg(function.Function):
     """負数クラス
     """
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        return utils.force_array(-x)
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        return utils.force_array(-xs[0]),
 
-    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
-        return -gy,
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        return -gys[0],
 
 
 def neg(x: types.OperandValue) -> redezero.Variable:
@@ -134,14 +139,16 @@ class Sub(function.Function):
     x0_shape: tuple
     x1_shape: tuple
 
-    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        x0, x1 = xs
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
         y = x0 - x1
-        return utils.force_array(y)
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
-        gx0 = gy
-        gx1 = -gy
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        gx0 = gys[0]
+        gx1 = -gys[0]
         # 形状が異なる場合にはブロードキャスト
         if self.x0_shape != self.x1_shape:
             gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
@@ -191,14 +198,16 @@ class Div(function.Function):
     """除算クラス
     """
 
-    def forward(self, x0: npt.NDArray, x1: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        x0, x1 = xs
         y = x0 / x1
-        return utils.force_array(y)
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> tuple[redezero.Variable, ...]:  # type: ignore[override]
-        x0, x1 = self.inputs
-        gx0 = gy / x1
-        gx1 = gy * (-x0 / x1 ** 2)
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        x0, x1 = xs
+        gx0 = gys[0] / x1
+        gx1 = gys[0] * (-x0 / x1 ** 2)
         # 形状が異なる場合にはブロードキャスト
         if x0.shape != x1.shape:
             gx0 = redezero.functions.sum_to(gx0, x0.shape)
@@ -251,15 +260,16 @@ class Pow(function.Function):
     def __init__(self, c: int) -> None:
         self.c: int = c
 
-    def forward(self, x: npt.NDArray) -> npt.NDArray:  # type: ignore[override]
-        y = x ** self.c
-        return utils.force_array(y)
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        y = xs[0] ** self.c
+        return utils.force_array(y),
 
-    def backward(self, gy: redezero.Variable) -> redezero.Variable:  # type: ignore[override]
-        x = self.inputs[0]
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+        x = xs[0]
         c = self.c
-        gx = c * x ** (c - 1) * gy
-        return gx
+        gx = c * x ** (c - 1) * gys[0]
+        return gx,
 
 
 def pow(x: types.OperandValue, c: int) -> redezero.Variable:

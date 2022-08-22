@@ -6,6 +6,7 @@ import numpy.typing as npt
 from redezero import types
 from redezero import configuration
 from redezero import variable
+import redezero
 
 
 def no_grad() -> contextlib._GeneratorContextManager[None]:
@@ -50,9 +51,8 @@ class Function:
             関数の出力変数
         """
         variable_inputs = tuple([variable.as_variable(x) for x in inputs])
-
-        xs = [x.data for x in variable_inputs]
-        ys = self.forward(*xs)
+        xs = tuple([x.data for x in variable_inputs])
+        ys = self.forward(xs)
         tupled_ys = ys if isinstance(ys, tuple) else (ys,)
         outputs = [variable.Variable(y) for y in tupled_ys]
 
@@ -67,12 +67,12 @@ class Function:
 
         return outputs
 
-    def forward(self, xs) -> tuple[npt.NDArray, ...]:
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         """入力配列に対する順伝播の実施
 
         Parameters
         ----------
-        xs : tuple[numpy.ndarray]
+        xs : tuple[numpy.ndarray, ...]
             順伝播を適用する入力配列
 
         Returns
@@ -82,17 +82,20 @@ class Function:
         """
         raise NotImplementedError()
 
-    def backward(self, gys) -> tuple[variable.Variable, ...]:
+    def backward(self, xs: tuple[npt.NDArray, ...],
+                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         """勾配配列に対する逆伝播の実施
 
         Parameters
         ----------
-        gys : tuple[Variable]
+        xs : tuple[numpy.ndarray, ...]
+            逆伝播を適用する入力配列S
+        gys : tuple[~redezero.Variable, ...]
             逆伝播を適用する勾配配列
 
         Returns
         -------
-        tuple[Variable]
+        tuple[~redezero.Variable, ...]
             逆伝播適用後の出力勾配タプル
         """
         raise NotImplementedError()

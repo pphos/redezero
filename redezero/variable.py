@@ -260,15 +260,17 @@ class Variable:
         # 出力から順にたどる関数がなくなるまで計算
         while funcs:
             f: function.Function = heapq.heappop(funcs)[2]
-            gys: list[Optional[Variable]] = []
+            gys: list[Variable] = []
             for output_ref in f.outputs:
-                if (output := output_ref()) is not None:
+                if ((output := output_ref()) is not None) and (output.grad is not None):
                     gys.append(output.grad)
 
+            in_data = tuple([x.data for x in f.inputs])
+            out_grad = tuple(gys)
+
             with configuration.using_config('enable_backprop', create_graph):
-                gxs = f.backward(*gys)
-                tupled_gxs = gxs if isinstance(gxs, tuple) else (gxs,)
-                for x, gx in zip(f.inputs, tupled_gxs):
+                gxs = f.backward(in_data, out_grad)
+                for x, gx in zip(f.inputs, gxs):
                     if x.grad is None:
                         x.grad = gx
                     else:
