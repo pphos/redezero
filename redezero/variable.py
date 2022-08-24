@@ -229,6 +229,9 @@ class Variable:
         create_graph: bool
             逆伝播で行う計算に対してさらに逆伝播を行うかのフラグ
         """
+        if self.creator is None:
+            return
+
         if self.grad is None:
             # y.gradの微分値を設定
             self.grad = Variable(np.ones_like(self.data))
@@ -238,17 +241,17 @@ class Variable:
         # (関数のbackwardメソッドが誤って複数回呼ばれることを防ぐ)
         seen_set: set[function.Function] = set()
 
-        def add_func(f: Optional[function.Function]) -> None:
+        def add_func(f: function.Function) -> None:
             """逆伝播対象の関数追加
 
             逆伝播対象の関数を追加するたびに世代の昇順ソート実施
 
             Parameters
             ----------
-            f : Optinal[Function]
+            f : ~redezero.Function]
                 逆伝播対象のFunction
             """
-            if (f not in seen_set) and (f is not None):
+            if f not in seen_set:
                 # heapqは最小値を取り出す仕組みのため, generationを負数に変換
                 # Chainer _backprop.pyの下記処理を参考
                 # https://github.com/chainer/chainer/blob/536cda7c9a146b9198f83837ba439a5afbdc074d/chainer/_backprop.py#L161
