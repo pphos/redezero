@@ -1,6 +1,7 @@
 from __future__ import annotations
-import contextlib
+from typing import Iterable, Optional
 from weakref import ref, ReferenceType
+import contextlib
 import numpy.typing as npt
 
 from redezero import types
@@ -20,7 +21,7 @@ def no_grad() -> contextlib._GeneratorContextManager[None]:
 class Function:
     """微分可能関数のインターフェース
 
-    `Function`クラスのサブクラスは`forward`, `backward`メソッドを実装することで順伝播の計算と逆伝播の自動導出ができます
+    `Function`クラスのサブクラスは`forward`, `backward`メソッドを実装することで順伝播の計算と逆伝播の自動導出ができる
 
     Attributes
     ----------
@@ -31,11 +32,11 @@ class Function:
     generation : int
         順伝播時の世代数
     """
-    inputs: tuple[variable.Variable, ...]
-    outputs: list[ReferenceType[variable.Variable]]
+    inputs: tuple[redezero.Variable, ...]
+    outputs: tuple[ReferenceType[redezero.Variable], ...]
     generation: int
 
-    def apply(self, inputs: tuple[types.OperandValue, ...]) -> list[variable.Variable]:
+    def apply(self, inputs: tuple[types.OperandValue, ...]) -> tuple[redezero.Variable, ...]:
         """出力変数の計算を行い計算グラフへ追加
 
         基本的な振る舞いは:class:`FunctionNode`のドキュメントに記載されています
@@ -47,13 +48,13 @@ class Function:
 
         Returns
         -------
-        tuple[~redezero.Variable] | ~redezero.Variable
+        tuple[~redezero.Variable, ...]
             関数の出力変数
         """
         variable_inputs = tuple([variable.as_variable(x) for x in inputs])
         xs = tuple([x.data for x in variable_inputs])
         ys = self.forward(xs)
-        outputs = [variable.Variable(y) for y in ys]
+        outputs = tuple([variable.Variable(y) for y in ys])
 
         if configuration.Config.enable_backprop:
             self.generation: int = max([x.generation for x in variable_inputs])
@@ -62,7 +63,7 @@ class Function:
             self.inputs = variable_inputs
             # FunctionとVariable間の循環参照を解消するために弱参照モジュール(weakref)を使用
             # (弱参照は、参照カウントを増やさずに別オブジェクトを参照する機能)
-            self.outputs = [ref(output) for output in outputs]
+            self.outputs = tuple([ref(output) for output in outputs])
 
         return outputs
 
