@@ -1,4 +1,5 @@
 from __future__ import annotations
+from weakref import ReferenceType, ref
 from typing import Optional, Sequence
 import heapq
 import numpy as np
@@ -8,6 +9,114 @@ from redezero import configuration
 from redezero import function
 import redezero
 from redezero.functions.math import basic_math
+
+
+class VariableNode:
+    """Variableの逆伝播の計算グラフを表すノード
+
+    このオブジェクトはvariable nodeの計算グラフを表し,
+    誤差逆伝播で使用される各々の関数に渡される勾配を決定する
+
+    variable nodeは:class:`Variable`オブジェクトにより保持される.
+    :class:`Function`オブジェクトはvariableを引数として取り, variable nodeへの参照も保持する.
+    注意として, 一般にvariable nodeは対応するdata配列への参照を保持しない.
+
+    実際には, 以下のケースではdata配列はvariable nodeからアクセスできます.
+    1.  variable nodeへの参照を保持する:class:`Variable`オブジェクトが存在する場合,
+        variable nodeはvariableオブジェクトへの弱参照を保持するため, 弱参照を介してdata配列にアクセスできる.
+    2.  :meth:`retain_data`が呼び出された場合, variable nodeはdata配列への参照を保持する.
+        主に入力または出力のdata配列を必要とする誤差逆伝播の手順中で呼び出される.
+
+    Attributes
+    ----------
+    dtype : numpy.dtype
+        data配列の型
+    shape : tuple
+        data配列の形状
+    name : Optional[str]
+        variable nodeの名前
+    """
+    _variable: ReferenceType[Variable]
+    _creator: Optional[function.Function]
+    _data: Optional[npt.NDArray]
+    _generation: int
+    _grad: Optional[Variable]
+    name: Optional[str]
+    dtype: Optional[np.dtype]
+    shape: tuple
+
+    def __init__(self, variable: Variable, name: Optional[str], grad: Optional[Variable] = None) -> None:
+        """VariableNodeインスタンスの初期化
+
+        Parameters
+        ----------
+        variable : ~redezero.Variable
+            入力のVariableオブジェクト
+        name : Optional[str]
+            variable nodeの名前
+        """
+        self._variable = ref(variable)
+        self._creator = None
+        self._data = None
+        self._generation = 0
+        self.name = name
+
+        vdata = variable.data
+        self._set_data_type(vdata)
+
+        self._grad = grad
+
+    @property
+    def creator(self) -> Optional[function.Function]:
+        return self._creator
+
+    @creator.setter
+    def creator(self, func: function.Function) -> None:
+        self._creator = func
+        self._generation = func.generation + 1
+
+    @property
+    def data(self) -> Optional[npt.NDArray]:
+        """variableに対応するdata配列
+
+        dataがない場合には, ``None``が返される
+        """
+        return self._data
+
+    @data.setter
+    def data(self, d: Optional[npt.NDArray]) -> None:
+        self._data = d
+        if d is not None:
+            self._set_data_type(d)
+
+    @property
+    def grad(self) -> Optional[Variable]:
+        """variableに対応する勾配"""
+        return self._grad
+
+    @grad.setter
+    def grad(self, g: Optional[Variable]) -> None:
+        self._grad = g
+
+    @property
+    def generation(self) -> int:
+        return self._generation
+
+    def retain_data(self) -> None:
+        """variable nodeがvariableの対応するdata配列への参照を保持する
+
+        variableへの弱参照がなくなっている場合にはエラーを発生させる
+        """
+        variable = self._variable()
+        if variable is not None:
+            self.data = variable.data
+        else:
+            raise RuntimeError('cannnot retain variable data: the variable has already been released.')
+
+    def _set_data_type(self, d: Optional[npt.NDArray]) -> None:
+        if d is not None:
+            self.dtype = d.dtype
+            self.shape = d.shape
 
 
 class Variable:
@@ -63,10 +172,8 @@ class Variable:
     __pow__ = basic_math.pow
 
     _data: npt.NDArray
-    _name: Optional[str]
-    _creator: Optional[function.Function]
-    _generation: int
-    grad: Optional[Variable]
+    _node: VariableNode
+    _grad: Optional[Variable]
 
     def __init__(self, data: npt.NDArray, name=None) -> None:
         """Variableインスタンスの初期化
@@ -88,10 +195,8 @@ class Variable:
                 raise TypeError(f'{type(data)} is not supported.')
 
         self._data = data
-        self._name = name
-        self._creator = None
-        self._generation = 0
-        self.grad = None
+        self._grad = None
+        self._node = VariableNode(self, name)
 
     @property
     def data(self) -> npt.NDArray:
@@ -102,25 +207,37 @@ class Variable:
         self._data = data
 
     @property
+    def grad(self) -> Optional[Variable]:
+        return self._grad
+
+    @grad.setter
+    def grad(self, g: Optional[Variable]) -> None:
+        self._grad = g
+        self._node.grad = g
+
+    @property
     def name(self) -> Optional[str]:
-        return self._name
+        return self._node.name
 
     @name.setter
     def name(self, n: Optional[str]) -> None:
-        self._name = n
+        self._node.name = n
 
     @property
     def creator(self) -> Optional[function.Function]:
-        return self._creator
+        return self._node.creator
 
     @creator.setter
     def creator(self, func: function.Function) -> None:
-        self._creator = func
-        self._generation = func.generation + 1
+        self._node.creator = func
 
     @property
     def generation(self) -> int:
-        return self._generation
+        return self._node.generation
+
+    @property
+    def node(self) -> VariableNode:
+        return self._node
 
     @property
     def shape(self) -> tuple[int, ...]:
