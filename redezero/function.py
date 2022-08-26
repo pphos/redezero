@@ -59,7 +59,7 @@ class Function:
         if configuration.Config.enable_backprop:
             self.generation: int = max([x.generation for x in variable_inputs])
             for output in outputs:
-                output.set_creator(self)
+                output.creator = self
             self.inputs = variable_inputs
             # FunctionとVariable間の循環参照を解消するために弱参照モジュール(weakref)を使用
             # (弱参照は、参照カウントを増やさずに別オブジェクトを参照する機能)

@@ -62,11 +62,11 @@ class Variable:
     __rtruediv__ = basic_math.rdiv
     __pow__ = basic_math.pow
 
-    data: npt.NDArray
-    name: Optional[str]
+    _data: npt.NDArray
+    _name: Optional[str]
+    _creator: Optional[function.Function]
+    _generation: int
     grad: Optional[Variable]
-    creator: Optional[function.Function]
-    generation: int
 
     def __init__(self, data: npt.NDArray, name=None) -> None:
         """Variableインスタンスの初期化
@@ -87,11 +87,40 @@ class Variable:
             if not isinstance(data, np.ndarray):
                 raise TypeError(f'{type(data)} is not supported.')
 
-        self.data: npt.NDArray = data
-        self.name: Optional[str] = name
-        self.grad: Optional[Variable] = None
-        self.creator: Optional[function.Function] = None
-        self.generation: int = 0
+        self._data = data
+        self._name = name
+        self._creator = None
+        self._generation = 0
+        self.grad = None
+
+    @property
+    def data(self) -> npt.NDArray:
+        return self._data
+
+    @data.setter
+    def data(self, data: npt.NDArray) -> None:
+        self._data = data
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, n: Optional[str]) -> None:
+        self._name = n
+
+    @property
+    def creator(self) -> Optional[function.Function]:
+        return self._creator
+
+    @creator.setter
+    def creator(self, func: function.Function) -> None:
+        self._creator = func
+        self._generation = func.generation + 1
+
+    @property
+    def generation(self) -> int:
+        return self._generation
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -203,17 +232,6 @@ class Variable:
         p = str(self.data).replace('\n', '\n' + ' ' * 9)
         return f'variable({p})'
 
-    def set_creator(self, func: function.Function) -> None:
-        """生成元Functionのつながりを保持
-
-        Parameters
-        --------------
-        func : redezero.Function
-            Variableインスタンスの生成元Function
-        """
-        self.creator = func
-        self.generation = func.generation + 1
-
     def cleargrad(self) -> None:
         """微分値のリセット
         """
@@ -223,7 +241,7 @@ class Variable:
         """variableインスタンスに対して誤差逆伝播を実施
 
         Parameters
-        --------------
+        ----------
         retain_grad : bool
             変数が勾配を保持するかのフラグ
         create_graph: bool
