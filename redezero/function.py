@@ -158,10 +158,10 @@ class Function:
         len_gxs = len(gxs)
         if len_gxs == len(self.inputs):
             gxs = tuple([gxs[i] for i in target_input_indexes])
-        elif len_gxs != len(target_input_indexes):
-            raise ValueError('number of returned values is incorrect.')
+        else:
+            assert len_gxs == len(target_input_indexes)
 
-        ret = []
+        ret: list[redezero.Variable] = []
         for gx, g_input in zip(gxs, grad_inputs):
             if g_input is None:
                 ret.append(gx)

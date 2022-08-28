@@ -1,6 +1,7 @@
 from redezero import types
 from redezero import variable
 from redezero import functions
+from redezero import _backprop_utils
 
 # import class and function
 from redezero.configuration import Config

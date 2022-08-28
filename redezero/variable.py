@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import configuration
 from redezero import function
 from redezero.functions.math import basic_math
@@ -118,6 +119,20 @@ class VariableNode:
         var = Variable(self._data, name=self.name)
         return var
 
+    def get_variable_or_none(self) -> Optional[redezero.Variable]:
+        """:class:`~redezero.Variable` または ``None``を返却する
+
+        VariableNodeオブジェクトはvariableオブジェクトへの弱参照を保持している.
+        弱参照が有効な場合, variableオブジェクトを返却する.
+        弱参照が無効な場合, ``None``を返却する
+
+        Returns
+        -------
+        Optional[~redezero.Variable]
+            VariableNodeオブジェクトを参照しているvariableオブジェクト
+        """
+        return self._variable()
+
     def retain_data(self) -> None:
         """variable nodeがvariableの対応するdata配列への参照を保持する
 
@@ -128,6 +143,11 @@ class VariableNode:
             self.data = variable.data
         else:
             raise RuntimeError('cannot retain variable data: the variable has already been released.')
+
+    def _set_grad_if_available(self, g: Optional[Variable]) -> None:
+        var = self._variable()
+        if var is not None:
+            var._grad = g
 
     def _set_data_type(self, d: Optional[npt.NDArray]) -> None:
         if d is not None:
@@ -372,6 +392,9 @@ class Variable:
     def backward(self, retain_grad: bool = False, create_graph: bool = False) -> None:
         """variableインスタンスに対して誤差逆伝播を実施
 
+        参考: Chainer variable.py
+        https://github.com/chainer/chainer/blob/v5/chainer/variable.py
+
         Parameters
         ----------
         retain_grad : bool
@@ -379,6 +402,10 @@ class Variable:
         create_graph: bool
             逆伝播で行う計算に対してさらに逆伝播を行うかのフラグ
         """
+        with configuration.using_config('enable_backprop', create_graph):
+            self._backward_main(retain_grad)
+
+    def _backward_main(self, retain_grad: bool) -> None:
         if self.creator is None:
             return
 
@@ -391,7 +418,8 @@ class Variable:
         # (関数のbackwardメソッドが誤って複数回呼ばれることを防ぐ)
         seen_set: set[function.Function] = set()
         # VariableNodeに対応する勾配を保持
-        grads: dict[VariableNode, Optional[Variable]] = {self._node: self._grad}
+        grads = _backprop_utils.GradTable(load_if_new=True)
+        grads[self._node] = self._grad
 
         def add_func(f: function.Function) -> None:
             """逆伝播対象の関数追加
@@ -410,92 +438,56 @@ class Variable:
                 heapq.heappush(funcs, (-f.generation, len(seen_set), f))
                 seen_set.add(f)
         add_func(self.creator)
-
-        def get_grad(node: Optional[VariableNode]) -> Optional[Variable]:
-            """VariableNodeに対応する勾配を取得
-
-            Parameters
-            ----------
-            node : Optional[VariableNode]
-                勾配の取得対象のVariableNode
-
-            Returns
-            -------
-            Optional[Variable]
-                VariableNodeに対応する勾配
-            """
-            if node is None:
-                return None
-            if node in grads:
-                return grads[node]
-            return node.grad
+        leaf_nodes: set[VariableNode] = set()
 
         # 逆伝播のメイン処理
         # 出力から順にたどる関数がなくなるまで計算
         while funcs:
             f: function.Function = heapq.heappop(funcs)[2]
             inputs = f.inputs
+            target_input_indexes = tuple([i for i in range(len(inputs))])
 
             # y_nodeはweakref
             outputs = [y_node() for y_node in f.outputs]
-            out_grad = tuple([get_grad(y_node) for y_node in outputs])
+            out_grad = tuple([grads.pop(y_node) for y_node in outputs])
+            if not target_input_indexes:
+                continue
 
-            with configuration.using_config('enable_backprop', create_graph):
-                # 現在の入力勾配を収集する
-                #
-                # Note:
-                # ``f(x, x)``の様に, 同じ変数が関数の入力として渡された場合, 下記の理由により勾配の計算が複雑になる.
-                # 第1, 第2引数を参照して逆伝播された勾配を同じ変数を参照して現在の勾配に蓄積する必要がある.
-                # 現在の実装では, 現在の勾配を最初に現れた場合にのみ引数として渡し, 残りは``None``を渡すようになっている
-                #
-                # Examples:
-                # 入力変数が``(x, x)``であるとき, :meth:`backward_accumulate`に渡される入力勾配は``(gx, None)``である.
-                # ここで``gx``は``x``の現在の勾配である
-                target_input_indexes = tuple([i for i in range(len(inputs))])
-                target_inputs = tuple([inputs[i] for i in target_input_indexes])
-                in_grad = []
-                for i, index_i in enumerate(target_input_indexes):
-                    x = inputs[index_i]
-                    if x in target_inputs[:i]:
-                        gx = None
-                    elif x in grads:
-                        gx = grads[x]
-                    elif x.creator is None:
-                        gx = x.grad
-                    else:
-                        gx = None
-                    in_grad.append(gx)
+            # 現在の入力勾配を収集する
+            target_inputs = tuple([inputs[i] for i in target_input_indexes])
+            in_grad: dict[redezero.VariableNode, list[redezero.Variable]] = {}
+            for x in target_inputs:
+                if x not in in_grad:
+                    in_grad[x] = grads.get_as_list(x)
+                    # 勾配のリセット（不要なメモリ確保を防ぐため）
+                    x._set_grad_if_available(None)
 
-                gxs = f.backward_accumulate(target_input_indexes, out_grad, tuple(in_grad))
-                for i, gx in enumerate(gxs):
-                    if gx is None:
-                        continue
+            _backprop_utils.backprop_step(f, target_input_indexes, out_grad, in_grad)
 
-                    x = target_inputs[i]
+            # 途中変数の勾配が不要な場合にはリセット（不要なメモリ確保を防ぐため）
+            for y, gy in zip(outputs, out_grad):
+                if y is not None and y is not self.node:
+                    y._set_grad_if_available(gy if retain_grad else None)
+            del gy, out_grad
 
-                    if x in target_inputs[:i]:
-                        x_grad = grads[x]
-                        grads[x] = gx if x_grad is None else x_grad + gx
-                    else:
-                        grads[x] = gx
+            # 変数の親ノードの設定
+            for x, gx in in_grad.items():
+                if not gx:
+                    continue
+                if x.creator is None:
+                    # 生成元関数がない場合, 自身を末端ノードとして追加
+                    leaf_nodes.add(x)
+                else:
+                    add_func(x.creator)
+            del gx, in_grad
 
-                    # 逆伝播の出力をもとに勾配更新
-                    x_var = x.get_variable()
-                    if x_var is not None:
-                        x_var._grad = grads[x]
-
-                    if x.creator is not None:
-                        add_func(x.creator)
-                del gxs
-
-            if not retain_grad:
-                # 途中の変数の微分値をすべてリセット (不要なメモリ確保を防ぐため)
-                for y in outputs:
-                    if y is not None and y is not self.node:
-                        grads[y] = None
-                        y_var = y.get_variable()
-                        if y_var is not None:
-                            y_var._grad = None
+        # 末端ノードの勾配更新
+        for x in leaf_nodes:
+            x_var = x.get_variable_or_none()
+            gx = grads.pop(x)
+            if x_var is not None:
+                x_var._grad = gx
+        grads.assert_no_grad()
 
     def reshape(self, *shape: int) -> Variable:
         """配列の形状を変更する
