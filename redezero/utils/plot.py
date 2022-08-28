@@ -7,28 +7,28 @@ import redezero
 from redezero import function
 
 
-def _dot_var(v: redezero.Variable, verbose: bool = False) -> str:
-    """VariableをDOT言語の文字列へ変換する
+def _dot_var_node(node: redezero.VariableNode, verbose: bool = False) -> str:
+    """VariableNodeをDOT言語の文字列へ変換する
 
     Parameters
     ----------
-    v : Variable
-        DeZeroの変数
+    node : ~redezero.VariableNode
+        VariableNodeオブジェクト
     verbose : bool, optional
         ndarrayインスタンスの「形状」と「型」も合わせて出力するフラグ
 
     Returns
     -------
     str
-        Variableインスタンスの情報をDOT言語に変換した文字列
+        VariableNodeの情報をDOT言語に変換した文字列
     """
-    name = '' if v.name is None else v.name
-    if verbose and v.data is not None:
-        if v.name is not None:
+    name = '' if node.name is None else node.name
+    if verbose:
+        if node.name is not None:
             name += ': '
-        name += f'{str(v.shape)} {str(v.dtype)}'
+        name += f'{str(node.shape)} {str(node.dtype)}'
 
-    return f'{id(v)} [label="{name}", color=orange, style=filled]\n'
+    return f'{id(node)} [label="{name}", color=orange, style=filled]\n'
 
 
 def _dot_func(f: function.Function) -> str:
@@ -81,16 +81,16 @@ def get_dot_graph(output: redezero.Variable, verbose: bool = True) -> str:
             seen_set.add(f)
 
     add_func(output.creator)
-    txt += _dot_var(output, verbose)
+    txt += _dot_var_node(output.node, verbose)
 
     while funcs:
         func = funcs.pop()
         txt += _dot_func(func)
-        for x in func.inputs:
-            txt += _dot_var(x, verbose)
+        for x_node in func.inputs:
+            txt += _dot_var_node(x_node, verbose)
 
-            if x.creator is not None:
-                add_func(x.creator)
+            if x_node.creator is not None:
+                add_func(x_node.creator)
 
     return 'digraph g {\n' + txt + '}'
 

@@ -23,12 +23,11 @@ class Reshape(function.Function):
         self.shape = shape
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
-        x, = xs
-        self.x_shape = x.shape
-        y = x.reshape(self.shape)
+        self.x_shape = xs[0].shape
+        y = xs[0].reshape(self.shape)
         return y,
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         return reshape(gys[0], self.x_shape),
 

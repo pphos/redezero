@@ -28,7 +28,7 @@ class SumTo(function.Function):
         y = utils.sum_to(xs[0], self.shape)
         return y,
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx = redezero.functions.broadcast_to(gys[0], self.x_shape)
         return gx,

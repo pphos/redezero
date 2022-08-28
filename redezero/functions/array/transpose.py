@@ -25,7 +25,7 @@ class Transpose(function.Function):
         y = xs[0].transpose(self.axes)
         return y,
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         if self.axes is None:
             return transpose(gys[0]),

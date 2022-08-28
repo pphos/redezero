@@ -10,6 +10,7 @@ from redezero.function import Function
 from redezero.function import no_grad
 
 from redezero.variable import Variable
+from redezero.variable import VariableNode
 from redezero.variable import as_variable
 
 from redezero.functions.math import basic_math

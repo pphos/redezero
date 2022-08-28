@@ -13,12 +13,16 @@ class Sin(function.Function):
     """
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.retain_inputs((0,))
+
         y = np.sin(xs[0])
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        gx = gys[0] * cos(xs[0])
+        x = self.get_retained_inputs()[0]
+
+        gx = gys[0] * cos(x)
         return gx,
 
 
@@ -40,12 +44,16 @@ def sin(x: types.OperandValue) -> redezero.Variable:
 
 class Cos(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.retain_inputs((0,))
+
         y = np.cos(xs[0])
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        gx = gys[0] * -sin(xs[0])
+        x = self.get_retained_inputs()[0]
+
+        gx = gys[0] * -sin(x)
         return gx,
 
 

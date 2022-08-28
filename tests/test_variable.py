@@ -1,7 +1,48 @@
 import pytest
 import numpy as np
 
+from redezero import function
 from redezero import Variable
+
+
+class TestVariableNode:
+    def test_正常系_インスタンス初期化(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]), name='x')
+
+        assert x.node.creator is None
+        assert x.node.data is None
+        assert x.generation == 0
+        assert x.name == 'x'
+        assert x.node.dtype == x.dtype
+        assert x.node.shape == x.shape
+
+        # Variableオブジェクトの取得
+        var = x.node.get_variable()
+        assert var == x
+
+    def test_正常系_ノードの生成元関数の設定(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        f = function.Function()
+        f.generation = 0
+
+        x.node.creator = f
+        assert x.node.generation == 1
+
+    def test_正常系_variableのdata配列への参照の保持(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+
+        x.node.retain_data()
+        assert np.array_equal(x.node.data, x.data)
+
+    def test_異常系_variableへの弱参照が無効(self):
+        x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+        x_node = x.node
+        # VariableNodeからVariableへの参照を切るためにxを削除
+        del x
+
+        with pytest.raises(RuntimeError) as e:
+            x_node.retain_data()
+        assert str(e.value) == 'cannot retain variable data: the variable has already been released.'
 
 
 class TestVariable:
@@ -22,6 +63,9 @@ class TestVariable:
     def test_正常系_プロパティ動作(self, x):
         y = Variable(x)
         # プロパティのテスト
+        assert np.array_equal(y.data, x)
+        assert y.grad is None
+        assert y.generation == 0
         assert y.shape == x.shape
         assert y.ndim == x.ndim
         assert y.size == x.size
@@ -92,7 +136,7 @@ class TestVariable:
         params_for_backward().values(),
         ids=params_for_backward().keys()
     )
-    def test_正常系_逆伝播(self, retain_grad):
+    def test_正常系_逆伝播_一つの関数が複数同じ変数を参照する(self, retain_grad):
         # ゼロから作るDeep Learning 3 P107参照
         x = Variable(np.array(2.0))
         expect = np.array(64.0)

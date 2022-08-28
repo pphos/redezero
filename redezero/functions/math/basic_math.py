@@ -24,12 +24,14 @@ class Add(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         x0, x1 = xs
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
+
         y = x0 + x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx0, gx1 = gys[0], gys[0]
+
         # 形状が異なる場合にはブロードキャスト
         if self.x0_shape != self.x1_shape:
             gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
@@ -62,13 +64,14 @@ class Mul(function.Function):
     """
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
-        x0, x1 = xs
-        y = x0 * x1
+        self.retain_inputs((0, 1))
+        y = xs[0] * xs[1]
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        x0, x1 = xs
+        [x0, x1] = self.get_retained_inputs()
+
         gx0 = gys[0] * x1
         gx1 = gys[0] * x0
         # 形状が異なる場合にはブロードキャスト
@@ -105,7 +108,7 @@ class Neg(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         return utils.force_array(-xs[0]),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         return -gys[0],
 
@@ -142,10 +145,11 @@ class Sub(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         x0, x1 = xs
         self.x0_shape, self.x1_shape = x0.shape, x1.shape
+
         y = x0 - x1
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
         gx0 = gys[0]
         gx1 = -gys[0]
@@ -199,13 +203,15 @@ class Div(function.Function):
     """
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
-        x0, x1 = xs
-        y = x0 / x1
+        self.retain_inputs((0, 1))
+
+        y = xs[0] / xs[1]
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        x0, x1 = xs
+        [x0, x1] = self.get_retained_inputs()
+
         gx0 = gys[0] / x1
         gx1 = gys[0] * (-x0 / x1 ** 2)
         # 形状が異なる場合にはブロードキャスト
@@ -261,13 +267,16 @@ class Pow(function.Function):
         self.c: int = c
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.retain_inputs((0,))
+
         y = xs[0] ** self.c
         return utils.force_array(y),
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        x = xs[0]
+        x = self.get_retained_inputs()[0]
         c = self.c
+
         gx = c * x ** (c - 1) * gys[0]
         return gx,
 

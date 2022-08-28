@@ -13,14 +13,14 @@ class Tanh(function.Function):
     """
 
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.retain_outputs((0,))
         y = utils.force_array(np.tanh(xs[0]))
         return y,
 
-    def backward(self, xs: tuple[redezero.Variable, ...],
+    def backward(self, indexes: tuple[int, ...],
                  gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        y = self.outputs[0]()
-        if y is None:
-            raise RuntimeError('cannnot retain variable data: the variable has already been released.')
+        y = self.get_retained_outputs()[0]
+
         gx = gys[0] * (1 - y * y)
         return gx,
 

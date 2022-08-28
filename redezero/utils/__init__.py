@@ -6,4 +6,4 @@ from redezero.utils.array import reshape_sum_backward
 from redezero.utils.plot import plot_dot_graph
 from redezero.utils.plot import get_dot_graph
 from redezero.utils.plot import _dot_func
-from redezero.utils.plot import _dot_var
+from redezero.utils.plot import _dot_var_node
