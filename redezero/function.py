@@ -21,6 +21,9 @@ def no_grad() -> contextlib._GeneratorContextManager[None]:
 class Function:
     """微分可能関数のインターフェース
 
+    参照: Chainer function_node.py
+    https://github.com/chainer/chainer/blob/238b1c0978f506a8c35b685ebd927b9885b648b3/chainer/function_node.py
+
     `Function`クラスのサブクラスは`forward`, `backward`メソッドを実装することで順伝播の計算と逆伝播の自動導出が
 
     入出力variableと計算グラフ内の対応するvariable nodeは区別される.
@@ -45,7 +48,7 @@ class Function:
     def apply(self, inputs: tuple[types.OperandValue, ...]) -> tuple[redezero.Variable, ...]:
         """出力変数の計算を行い計算グラフへ追加
 
-        基本的な振る舞いは:class:`FunctionNode`のドキュメントに記載されています
+        基本的な振る舞いは:class:`Function`のドキュメントに記載されています
 
         Parameters
         ----------

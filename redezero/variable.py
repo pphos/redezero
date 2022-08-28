@@ -14,6 +14,9 @@ from redezero.functions.math import basic_math
 class VariableNode:
     """Variableの逆伝播の計算グラフを表すノード
 
+    参照: Chainer variable.py
+    https://github.com/chainer/chainer/blob/238b1c0978f506a8c35b685ebd927b9885b648b3/chainer/variable.py
+
     このオブジェクトはvariable nodeの計算グラフを表し,
     誤差逆伝播で使用される各々の関数に渡される勾配を決定する
 
