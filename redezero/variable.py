@@ -495,6 +495,12 @@ class Variable:
 
         return redezero.functions.transpose(self, _axes)
 
+    @property
+    def T(self) -> redezero.Variable:
+        """行列の転置
+        """
+        return redezero.functions.transpose(self)
+
     def retain_data(self) -> None:
         """対応するVariableNodeがdata配列を参照できるようにする"""
         self._node.data = self._data
