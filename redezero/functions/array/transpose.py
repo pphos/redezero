@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import function
 from redezero import types
 
@@ -25,8 +26,9 @@ class Transpose(function.Function):
         y = xs[0].transpose(self.axes)
         return y,
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         if self.axes is None:
             return transpose(gys[0]),
 

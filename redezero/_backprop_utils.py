@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, cast
 import functools
 
 import redezero
@@ -169,7 +169,7 @@ class GradTable:
 
 
 def backprop_step(func: function.Function, target_input_indexes: tuple[int, ...],
-                  grad_outputs: tuple[redezero.Variable, ...],
+                  grad_outputs: tuple[Optional[redezero.Variable], ...],
                   grad_inputs: dict[redezero.VariableNode, list[redezero.Variable]]) -> None:
     """Functionの勾配を累積する
 
@@ -182,7 +182,7 @@ def backprop_step(func: function.Function, target_input_indexes: tuple[int, ...]
         勾配が累積されるFunction
     target_input_indexes : tuple[int, ...]
         ソート済みの勾配累積が必要な入力のインデックスのタプル
-    grad_outputs : tuple[~redezero.Variable, ...]
+    grad_outputs : tuple[Optional[~redezero.Variable], ...]
         出力変数に関する勾配
         出力変数に関する勾配が与えられない場合, 対応する要素は``None``である
     grad_inputs : dict[~redezero.VariableNode, list[~redezero.Variable]]
@@ -212,5 +212,28 @@ def backprop_step(func: function.Function, target_input_indexes: tuple[int, ...]
     del gxs
 
     # 勾配の累積
-    for gx in grad_inputs.values():
-        _reduce(gx)
+    for x_grad in grad_inputs.values():
+        _reduce(x_grad)
+
+
+def preprocess_backward_grad_outputs(values: tuple[Optional[redezero.Variable], ...]) -> tuple[redezero.Variable, ...]:
+    """逆伝播時に出力から渡ってくる勾配の検査
+
+    ``None``が含まれている場合にエラーとする
+
+    Parameters
+    ----------
+    values : tuple[Optional[redezero.Variable], ...]
+        逆伝播時に出力から渡ってくる勾配のタプル
+
+    Returns
+    -------
+    tuple[redezero.Variable, ...]
+        ``None``が含まれない出力勾配のタプル
+    """
+    for value in values:
+        if value is None:
+            raise TypeError('Value must be a `Variable`.')
+
+    checked_values: tuple[redezero.Variable, ...] = cast(tuple[redezero.Variable, ...], values)
+    return checked_values

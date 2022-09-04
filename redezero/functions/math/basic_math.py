@@ -1,8 +1,10 @@
 from __future__ import annotations
+from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import types
 from redezero import function
 from redezero import utils
@@ -28,10 +30,10 @@ class Add(function.Function):
         y = x0 + x1
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        gx0, gx1 = gys[0], gys[0]
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
 
+        gx0, gx1 = gys[0], gys[0]
         # 形状が異なる場合にはブロードキャスト
         if self.x0_shape != self.x1_shape:
             gx0 = redezero.functions.sum_to(gx0, self.x0_shape)
@@ -68,8 +70,9 @@ class Mul(function.Function):
         y = xs[0] * xs[1]
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         [x0, x1] = self.get_retained_inputs()
 
         gx0 = gys[0] * x1
@@ -108,8 +111,9 @@ class Neg(function.Function):
     def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
         return utils.force_array(-xs[0]),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         return -gys[0],
 
 
@@ -149,8 +153,9 @@ class Sub(function.Function):
         y = x0 - x1
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         gx0 = gys[0]
         gx1 = -gys[0]
         # 形状が異なる場合にはブロードキャスト
@@ -208,8 +213,9 @@ class Div(function.Function):
         y = xs[0] / xs[1]
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         [x0, x1] = self.get_retained_inputs()
 
         gx0 = gys[0] / x1
@@ -272,8 +278,9 @@ class Pow(function.Function):
         y = xs[0] ** self.c
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         x = self.get_retained_inputs()[0]
         c = self.c
 

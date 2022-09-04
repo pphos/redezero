@@ -61,12 +61,18 @@ class Function:
             関数の出力変数
         """
         variable_inputs = tuple([variable.as_variable(x) for x in inputs])
-        xs = tuple([x.data for x in variable_inputs])
+        xs = []
+        for x in variable_inputs:
+            if x.data is None:
+                raise ValueError('Input data must not be contain `None` value.')
+            else:
+                xs.append(x.data)
+        tupled_xs = tuple(xs)
 
         # 順伝播を行い, Variableオブジェクトに変換
         self._input_indexes_to_retain = None
         self._output_indexes_to_retain = None
-        ys = self.forward(xs)
+        ys = self.forward(tupled_xs)
         outputs = tuple([variable.Variable(y) for y in ys])
 
         if configuration.Config.enable_backprop:
@@ -106,8 +112,12 @@ class Function:
         raise NotImplementedError()
 
     def backward(self, target_input_indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+                 gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
         """勾配配列に対する逆伝播の実施
+
+        出力変数に関する勾配が与えられると, このメソッドは指定された入力変数に関する勾配を計算する.
+        このメソッドは``target_input_indexes``で指定されていない入力変数の勾配を計算する必要はない.
+        デフォルトの実装では``None``を返却する
 
         Parameters
         ----------
@@ -115,17 +125,19 @@ class Function:
             逆伝播で勾配が必要な入力変数のインデックス
         gys : tuple[~redezero.Variable, ...]
             逆伝播を適用する勾配配列
+            出力変数に関する勾配が与えられない場合, 対応する要素は``None``となる
 
         Returns
         -------
         tuple[~redezero.Variable, ...]
-            逆伝播適用後の出力勾配タプル
+            指定の入力変数に関する勾配のタプル
         """
-        raise NotImplementedError()
+        return (None,) * len(target_input_indexes)
 
     def backward_accumulate(self, target_input_indexes: tuple[int, ...],
-                            grad_outputs: tuple[redezero.Variable, ...],
-                            grad_inputs: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+                            grad_outputs: tuple[Optional[redezero.Variable], ...],
+                            grad_inputs: tuple[Optional[redezero.Variable], ...]
+                            ) -> tuple[Optional[redezero.Variable], ...]:
         """入力変数に関する勾配を計算し, 勾配を蓄積する
 
         参照: Chainer function_node.py
@@ -137,14 +149,17 @@ class Function:
         ----------
         target_input_indexes : tuple[int, ...]
             勾配計算が必要な入力変数
-        grad_outputs : tuple[~redezero.Variable, ...]
+        grad_outputs : tuple[Optional[~redezero.Variable], ...]
             出力変数に関する勾配
-        grad_inputs : tuple[~redezero.Variable, ...]
+            出力変数に対応する勾配が存在しない場合, 対応する要素は``None``である
+        grad_inputs : tuple[Optional[~redezero.Variable], ...]
             ``target_input_indexes``で指定した入力変数に関する勾配
+            これらの値は他の処理によって計算される.
+            変数に勾配の値が存在しない場合, 対応する要素は``None``である
 
         Returns
         -------
-        tuple[~redezero.Variable]
+        tuple[~redezero.Variable, ...]
             入力変数に関する勾配
             戻り値のタプルは``target_input_indexes``と同じ形状である
 
@@ -161,14 +176,15 @@ class Function:
         else:
             assert len_gxs == len(target_input_indexes)
 
-        ret: list[redezero.Variable] = []
+        ret: list[Optional[redezero.Variable]] = []
         for gx, g_input in zip(gxs, grad_inputs):
             if g_input is None:
                 ret.append(gx)
-            elif gx is None:
-                ret.append(g_input)
             else:
-                ret.append(gx + g_input)
+                if gx is None:
+                    ret.append(g_input)
+                else:
+                    ret.append(gx + g_input)
 
         return tuple(ret)
 
@@ -218,9 +234,15 @@ class Function:
         tuple[~redezero.Variable, ...]
             入力variableのタプル
         """
-        inputs = self.inputs
-        return tuple([inputs[index].get_variable()
-                      for index in self._input_indexes_to_retain])
+        if self._input_indexes_to_retain is None or self.inputs is None:
+            return ()
+
+        retained_inputs: list[redezero.Variable] = []
+        for index in self._input_indexes_to_retain:
+            input = self.inputs[index]
+            retained_inputs.append(input.get_variable())
+
+        return tuple(retained_inputs)
 
     def get_retained_outputs(self) -> tuple[redezero.Variable, ...]:
         """出力variableを返却する
@@ -232,6 +254,9 @@ class Function:
         tuple[~redezero.Variable, ...]
             出力variableのタプル
         """
+        if self._output_indexes_to_retain is None or self.outputs is None:
+            return ()
+
         outputs = []
         for index in self._output_indexes_to_retain:
             if (output := self.outputs[index]()) is not None:

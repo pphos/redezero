@@ -1,8 +1,10 @@
 from __future__ import annotations
+from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import utils
 from redezero import types
 from redezero import function
@@ -18,10 +20,10 @@ class Sin(function.Function):
         y = np.sin(xs[0])
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        x = self.get_retained_inputs()[0]
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
 
+        x = self.get_retained_inputs()[0]
         gx = gys[0] * cos(x)
         return gx,
 
@@ -49,10 +51,10 @@ class Cos(function.Function):
         y = np.cos(xs[0])
         return utils.force_array(y),
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        x = self.get_retained_inputs()[0]
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
 
+        x = self.get_retained_inputs()[0]
         gx = gys[0] * -sin(x)
         return gx,
 

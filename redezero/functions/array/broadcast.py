@@ -1,8 +1,10 @@
 from __future__ import annotations
+from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import types
 from redezero import function
 
@@ -28,9 +30,10 @@ class BroadCastTo(function.Function):
         y = np.broadcast_to(xs[0], self.shape)
         return y,
 
-    def backward(self, indexes: tuple[int, ...],
-                 gy: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
-        gx = redezero.functions.sum_to(gy[0], self.x_shape)
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
+        gx = redezero.functions.sum_to(gys[0], self.x_shape)
         return gx,
 
 

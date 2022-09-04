@@ -1,7 +1,9 @@
 from __future__ import annotations
+from typing import Optional
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import function
 from redezero import types
 
@@ -27,8 +29,9 @@ class Reshape(function.Function):
         y = xs[0].reshape(self.shape)
         return y,
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         return reshape(gys[0], self.x_shape),
 
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
+from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
 import redezero
+from redezero import _backprop_utils
 from redezero import utils
 from redezero import types
 from redezero import function
@@ -17,8 +19,9 @@ class Tanh(function.Function):
         y = utils.force_array(np.tanh(xs[0]))
         return y,
 
-    def backward(self, indexes: tuple[int, ...],
-                 gys: tuple[redezero.Variable, ...]) -> tuple[redezero.Variable, ...]:
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+
         y = self.get_retained_outputs()[0]
 
         gx = gys[0] * (1 - y * y)

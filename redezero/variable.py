@@ -44,11 +44,13 @@ class VariableNode:
     _creator: Optional[function.Function]
     _data: Optional[npt.NDArray]
     _generation: int
-    dtype: Optional[np.dtype]
+    dtype: np.dtype
+    ndim: int
     shape: tuple
+    size: int
     name: Optional[str]
 
-    def __init__(self, variable: Variable, name: Optional[str], grad: Optional[Variable] = None) -> None:
+    def __init__(self, variable: Variable, name: Optional[str]) -> None:
         """VariableNodeインスタンスの初期化
 
         Parameters
@@ -152,6 +154,8 @@ class VariableNode:
     def _set_data_type(self, d: Optional[npt.NDArray]) -> None:
         if d is not None:
             self.dtype = d.dtype
+            self.ndim = d.ndim
+            self.size = d.size
             self.shape = d.shape
 
 
@@ -162,7 +166,7 @@ class Variable:
 
     Attributes
     ----------
-    data : numpy.ndarray
+    data : Optional[numpy.ndarray]
         データの初期値の配列
     name : Optional[str]
         変数名
@@ -207,16 +211,20 @@ class Variable:
     __rtruediv__ = basic_math.rdiv
     __pow__ = basic_math.pow
 
-    _data: npt.NDArray
+    _data: Optional[npt.NDArray]
     _node: VariableNode
     _grad: Optional[Variable]
+    shape: tuple[int, ...]
+    ndim: int
+    size: int
+    dtype: np.dtype
 
-    def __init__(self, data: npt.NDArray, name=None) -> None:
+    def __init__(self, data: Optional[npt.NDArray], name=None) -> None:
         """Variableインスタンスの初期化
 
         Parameters
         ----------
-        data : npt.NDArray
+        data : Optional[npt.NDArray]
             :class:`Variable`のdocstringを参照
         name : Optional[str]
             :class:`Variable`のdocstringを参照
@@ -232,14 +240,15 @@ class Variable:
 
         self._data = data
         self._grad = None
+        self._set_data_type(data)
         self._node = VariableNode(self, name)
 
     @property
-    def data(self) -> npt.NDArray:
+    def data(self) -> Optional[npt.NDArray]:
         return self._data
 
     @data.setter
-    def data(self, data: npt.NDArray) -> None:
+    def data(self, data: Optional[npt.NDArray]) -> None:
         self._data = data
 
     @property
@@ -274,74 +283,6 @@ class Variable:
     def node(self) -> VariableNode:
         return self._node
 
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """配列の形状
-
-        Returns
-        -------
-        tuple[int]
-            配列の次元数のタプル
-
-        Examples
-        --------
-        >>> x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
-        >>> x.shape
-        (2, 3)
-        """
-        return self.data.shape
-
-    @property
-    def ndim(self) -> int:
-        """配列の次元数
-
-        Returns
-        -------
-        int
-            配列の次元数
-
-        Example
-        -------
-        >>> x = Variable(np.array([1, 2, 3]))
-        >>> x.ndim
-        1
-        """
-        return self.data.ndim
-
-    @property
-    def size(self) -> int:
-        """配列の要素数
-
-        Returns
-        -------
-        int
-            配列の要素数
-
-        Examples
-        --------
-        >>> x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
-        >>> x.size
-        6
-        """
-        return self.data.size
-
-    @property
-    def dtype(self) -> np.dtype:
-        """データ型の表示
-
-        Returns
-        -------
-        np.dtype
-            配列の要素のデータ型
-
-        Examples
-        --------
-        >>> x = Variable(np.array([1, 2, 3]))
-        >>> x.dtype
-        dtype('int64')
-        """
-        return self.data.dtype
-
     def __len__(self) -> int:
         """配列の最初の次元の要素数を返却
 
@@ -356,6 +297,8 @@ class Variable:
         >>> len(x)
         2
         """
+        if self.data is None:
+            raise TypeError("len() of unsized object")
         return len(self.data)
 
     def __repr__(self):
@@ -383,6 +326,13 @@ class Variable:
             return 'variable(None)'
         p = str(self.data).replace('\n', '\n' + ' ' * 9)
         return f'variable({p})'
+
+    def _set_data_type(self, d: Optional[npt.NDArray]) -> None:
+        if d is not None:
+            self.dtype = d.dtype
+            self.ndim = d.ndim
+            self.size = d.size
+            self.shape = d.shape
 
     def cleargrad(self) -> None:
         """微分値のリセット
@@ -449,6 +399,7 @@ class Variable:
 
             # y_nodeはweakref
             outputs = [y_node() for y_node in f.outputs]
+            # 順伝播の出力変数が複数ある場合, 逆伝播を呼び出していない出力変数の勾配は`None`が返却される
             out_grad = tuple([grads.pop(y_node) for y_node in outputs])
             if not target_input_indexes:
                 continue
@@ -484,9 +435,9 @@ class Variable:
         # 末端ノードの勾配更新
         for x in leaf_nodes:
             x_var = x.get_variable_or_none()
-            gx = grads.pop(x)
+            x_grad = grads.pop(x)
             if x_var is not None:
-                x_var._grad = gx
+                x_var._grad = x_grad
         grads.assert_no_grad()
 
     def reshape(self, *shape: int) -> Variable:
