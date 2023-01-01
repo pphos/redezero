@@ -7,6 +7,67 @@ from redezero import _backprop_utils
 from redezero import utils
 from redezero import types
 from redezero import function
+from redezero.functions.array.broadcast import broadcast_to
+
+
+class Sum(function.Function):
+    """Sum
+
+    Attributes
+    ----------
+    axis : tuple
+        和を求める際の軸
+    keepdims : bool
+        入力と出力を同じ次元数にするかのフラグ
+    x_shape: tuple
+        順伝播時の配列の形状
+    """
+    axis: Optional[tuple]
+    keepdims: bool
+
+    def __init__(self, axis: Optional[tuple], keepdims) -> None:
+        self.axis = axis
+        self.keepdims = keepdims
+
+    def forward(self, xs: tuple[npt.NDArray, ...]) -> tuple[npt.NDArray, ...]:
+        self.x_shape = xs[0].shape
+        y = xs[0].sum(axis=self.axis, keepdims=self.keepdims)
+        return utils.force_array(y),
+
+    def backward(self, _, gys: tuple[Optional[redezero.Variable], ...]) -> tuple[Optional[redezero.Variable], ...]:
+        gys = _backprop_utils.preprocess_backward_grad_outputs(gys)
+        gy = utils.reshape_sum_backward(gys[0], self.x_shape, self.axis, self.keepdims)
+        gx = broadcast_to(gy, self.x_shape)
+
+        return gx,
+
+
+def sum(x: types.OperandValue, axis=Optional[tuple], keepdims: bool = False) -> redezero.Variable:
+    """axisの軸に沿って要素を足し合わせる
+    keepdimsを指定した場合には, 入力と出力の次元を同じにする
+
+    Parameters
+    ----------
+     x : numpy.ndarray | ~redezero.Variable
+        入力変数
+    axis : Optional[tuple]
+        和を求める際の軸
+    keepdims : bool
+        入力と出力を同じ次元数にするかのフラグ
+
+    Returns
+    ----------
+    ~redezero.Variable
+        axis軸に沿って要素を足し合わせた後のVariableインスタンス
+
+    Examples
+    ---------
+    >>> x = Variable(np.array([[1, 2, 3], [4, 5, 6]]))
+    >>> y = sum(x, axis=(0,))
+    >>> y
+    variables([5, 7, 9])
+    """
+    return Sum(axis, keepdims).apply((x,))[0]
 
 
 class SumTo(function.Function):
